@@ -1,0 +1,244 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import BagViewer from '@/components/Bag';
+import LightRays from '@/components/Reusable/LightRays';
+import Particles from '@/components/Reusable/Particles';
+import IntroScreen from '@/components/IntroScreen';
+import Link from 'next/link';
+
+const INTRO_KEY = 'bb_intro_seen';
+
+const LIGHT_RAYS_PROPS = {
+  raysOrigin:     'top-center' as const,
+  raysColor:      '#ffffff',
+  raysSpeed:      0.5,
+  lightSpread:    0.8,
+  rayLength:      2,
+  followMouse:    true,
+  mouseInfluence: 0.1,
+  pulsating:      true,
+  fadeDistance:   1.5,
+};
+
+/* ─── Shared easing ─── */
+const EASE_OUT = [0.22, 1, 0.36, 1] as const;
+
+/* ─── Per-element animation variants ─── */
+
+// The whole hero fades up from a very slight scale
+const heroVariants = {
+  hidden:  { opacity: 0, scale: 1.04 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.85, ease: EASE_OUT },
+  },
+};
+
+// Headline: each word-group slides up + blur clears
+const headlineVariants = {
+  hidden:  { opacity: 0, y: 36, filter: 'blur(8px)' },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.9, ease: EASE_OUT },
+  },
+};
+
+// Thin horizontal rule that grows from left
+const ruleVariants = {
+  hidden:  { scaleX: 0, opacity: 0 },
+  visible: {
+    scaleX: 1,
+    opacity: 0.25,
+    transition: { duration: 0.7, ease: EASE_OUT, delay: 0.55 },
+  },
+};
+
+// Bottom-right copy block
+const copyVariants = {
+  hidden:  {},
+  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.65 } },
+};
+
+const copyChildVariants = {
+  hidden:  { opacity: 0, y: 18, filter: 'blur(4px)' },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.65, ease: EASE_OUT },
+  },
+};
+
+// Badge / pill at top of headline
+const badgeVariants = {
+  hidden:  { opacity: 0, y: -12 },
+  visible: {
+    opacity: 0.4,
+    y: 0,
+    transition: { duration: 0.55, ease: EASE_OUT, delay: 0.1 },
+  },
+};
+
+const Hero = () => {
+  const [showIntro, setShowIntro] = useState<boolean | null>(null);
+  // Controls when hero in-animation fires
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  useEffect(() => {
+    const seen = sessionStorage.getItem(INTRO_KEY);
+    setShowIntro(!seen);
+    // If no intro, animate hero immediately
+    if (seen) setHeroVisible(true);
+  }, []);
+
+  const handleIntroDone = () => {
+    sessionStorage.setItem(INTRO_KEY, '1');
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setShowIntro(false);
+    // Short delay so the white flash fully clears before hero animates in
+    setTimeout(() => setHeroVisible(true), 80);
+  };
+
+  if (showIntro === null) return null;
+
+  return (
+    <>
+      {showIntro && (
+        <IntroScreen
+          onDone={handleIntroDone}
+          LightRaysComponent={LightRays}
+          lightRaysProps={LIGHT_RAYS_PROPS}
+        />
+      )}
+
+      {/* ── Hero ── */}
+      <motion.div
+        className="relative w-full h-screen overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
+        variants={heroVariants}
+        initial="hidden"
+        animate={heroVisible ? 'visible' : 'hidden'}
+        // Keep invisible (not display:none) while intro plays so 3D scene loads
+        style={{ visibility: showIntro ? 'hidden' : 'visible' }}
+      >
+        {/* Light rays */}
+        <LightRays className="absolute inset-0 z-[1]" {...LIGHT_RAYS_PROPS} />
+
+        {/* Particles */}
+        <div className="absolute inset-0 z-[2]">
+          <Particles
+            particleColors={['#ffffff']}
+            particleCount={200}
+            particleSpread={10}
+            speed={0.1}
+            particleBaseSize={100}
+            moveParticlesOnHover={false}
+            alphaParticles={true}
+            disableRotation={true}
+            pixelRatio={1}
+          />
+        </div>
+
+        {/* 3D bag */}
+        <main className="absolute inset-0 z-40 overflow-hidden w-full h-screen">
+          <BagViewer modelPath="/bag.glb" />
+        </main>
+
+        {/* ── Copy overlay ── */}
+        <div className="absolute inset-0 pointer-events-none">
+
+          {/* Top-left — headline */}
+          <div className="absolute top-[13%] left-[2%] text-white uppercase">
+
+           
+
+            {/* Headline line 1 */}
+            <motion.div
+              variants={headlineVariants}
+              initial="hidden"
+              animate={heroVisible ? 'visible' : 'hidden'}
+              transition={{ delay: 0.18 }}
+            >
+              <h1 className="text-4xl md:text-5xl font-extralight leading-[0.9] tracking-tight">
+                timeless
+              </h1>
+            </motion.div>
+
+            {/* Headline line 2 */}
+            <motion.div
+              variants={headlineVariants}
+              initial="hidden"
+              animate={heroVisible ? 'visible' : 'hidden'}
+              transition={{ delay: 0.30 }}
+            >
+              <h1 className="text-5xl sm:text-6xl  font-medium leading-[0.9] tracking-tight">
+                design legacy
+              </h1>
+            </motion.div>
+
+            {/* Rule */}
+            {/* <motion.div
+              className="mt-5 w-24 h-px bg-white origin-left"
+              variants={ruleVariants}
+              initial="hidden"
+              animate={heroVisible ? 'visible' : 'hidden'}
+            /> */}
+          </div>
+
+          {/* Bottom-right — body copy + CTA */}
+          <motion.div
+            className="absolute right-[2%] bottom-[8%] max-w-xs space-y-5 pointer-events-auto"
+            variants={copyVariants}
+            initial="hidden"
+            animate={heroVisible ? 'visible' : 'hidden'}
+          >
+
+            {/* Body */}
+            <motion.p
+              className="text-xs text-white/55 font-light leading-relaxed text-justify uppercase"
+              variants={copyChildVariants}
+            >
+              A quiet luxury leather goods brand rooted in Italian design heritage
+              and crafted through Indian artistry. Where form follows meaning,
+              and every detail serves a reason.
+            </motion.p>
+
+            {/* CTA */}
+            <motion.div variants={copyChildVariants}>
+              <Link
+                href="#"
+                className="inline-block cursor-pointer px-7 py-2.5 border border-white/60 text-[10px] tracking-[3px] uppercase text-white/80 hover:bg-white hover:text-black transition-colors duration-300"
+              >
+                Shop Now
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* Bottom-left — scroll indicator (fades in last) */}
+          <motion.div
+            className="absolute bottom-8 left-[2.5%] flex items-center gap-3"
+            initial={{ opacity: 0 }}
+            animate={heroVisible ? { opacity: 0.3 } : { opacity: 0 }}
+            transition={{ duration: 0.6, delay: 1.1 }}
+          >
+            <div className="w-5 h-5 rounded-full border border-white/40 flex items-center justify-center">
+              <motion.span
+                className="w-[2px] h-[5px] rounded-full bg-white"
+                animate={{ y: [0, 4, 0], opacity: [0.8, 0.1, 0.8] }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </div>
+            <p className="text-[8px] tracking-[3px] uppercase text-white">Explore</p>
+          </motion.div>
+
+        </div>
+      </motion.div>
+    </>
+  );
+};
+
+export default Hero;

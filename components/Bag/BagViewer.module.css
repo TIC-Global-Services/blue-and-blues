@@ -1,0 +1,408 @@
+/* ─── Root ─── */
+.root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* ─── Loading fallback ─── */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #080810;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* ─── HUD ─── */
+.hud {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+  z-index: 10;
+  pointer-events: none;
+}
+.hudTitle {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+}
+.hudSub {
+  display: block;
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Hotspot layer ─── */
+.hotspotLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ─── Individual hotspot ─── */
+.hotspot {
+  position: absolute;
+  pointer-events: all;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: 1.5px solid var(--hs-color, #1A537B);
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+.hotspot:hover {
+  transform: translate(-50%, -50%) scale(1.3);
+  background: rgba(0,0,0,0.7);
+}
+.hotspot:hover .hotspotLabel {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.hotspotDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hs-color, #1A537B);
+  flex-shrink: 0;
+}
+
+.hotspotActive {
+  border-color: #fff;
+  background: rgba(255,255,255,0.12);
+  transform: translate(-50%, -50%) scale(1.15);
+}
+.hotspotActive .hotspotDot {
+  background: #fff;
+}
+
+/* Pulse ring */
+.hotspotRing {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hs-color, #1A537B);
+  animation: hotspotPulse 2.2s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes hotspotPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Label tooltip */
+.hotspotLabel {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  white-space: nowrap;
+  background: rgba(8,8,16,0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  backdrop-filter: blur(12px);
+}
+
+/* ─── Info panel ─── */
+.infoPanel {
+  position: absolute;
+  right: 28px;
+  top: 50%;
+  transform: translateY(-50%) translateX(24px);
+  width: 290px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 28px 24px 24px;
+  backdrop-filter: blur(24px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.4,0,0.2,1);
+  z-index: 20;
+  overflow: hidden;
+}
+.infoPanelVisible {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(-50%) translateX(0);
+}
+.infoPanelAccent {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+.infoPanelTag {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.infoPanelTitle {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: #fff;
+  letter-spacing: -0.4px;
+}
+.infoPanelDesc {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.55);
+  margin-bottom: 24px;
+}
+.infoPanelFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.infoPanelBadge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+  text-transform: uppercase;
+}
+.flyBtn {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.18s;
+  font-family: inherit;
+}
+.flyBtn:hover { color: rgba(255,255,255,0.85); }
+
+.closeBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: rgba(255,255,255,0.5);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, color 0.18s;
+}
+.closeBtn:hover {
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+}
+
+/* ─── Camera bar ─── */
+.cameraBar {
+  position: absolute;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  background: rgba(8,8,16,0.85);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 40px;
+  padding: 8px 16px;
+  backdrop-filter: blur(24px);
+  z-index: 10;
+}
+.camBtn {
+  padding: 7px 18px;
+  border-radius: 30px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.55);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.camBtn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-color: rgba(255,255,255,0.25);
+}
+.camBtnActive {
+  background: #1A537B;
+  color: #000;
+  border-color: #1A537B;
+}
+.camBtnActive:hover {
+  background: #406dc6;
+  color: #000;
+}
+
+/* ─── FX trigger button ─── */
+.fxTrigger {
+  position: absolute;
+  top: 28px;
+  right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 30px;
+  background: rgba(8,8,16,0.85);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  backdrop-filter: blur(24px);
+  z-index: 20;
+  transition: all 0.18s;
+  font-family: inherit;
+}
+.fxTrigger:hover {
+  border-color: #1A537B;
+  color: #1A537B;
+}
+.fxTriggerOpen {
+  border-color: #1A537B;
+  color: #1A537B;
+  background: rgba(13,230,90,0.08);
+}
+
+/* ─── FX panel ─── */
+.fxPanel {
+  position: absolute;
+  top: 72px;
+  right: 28px;
+  width: 240px;
+  background: rgba(8,8,16,0.92);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  padding: 18px;
+  backdrop-filter: blur(28px);
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.fxPanelVisible {
+  opacity: 1;
+  pointer-events: all;
+  transform: translateY(0);
+}
+.fxPanelHeader {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* FX group */
+.fxGroup {
+  margin-bottom: 14px;
+}
+.fxGroup:last-child { margin-bottom: 0; }
+
+.fxToggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.fxToggleRow:hover { background: rgba(255,255,255,0.08); }
+
+.fxLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+}
+
+/* Toggle switch */
+.toggleSwitch {
+  width: 34px;
+  height: 18px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.15);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggleOn { background: #1A537B; }
+.toggleKnob {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  top: 3px;
+  left: 3px;
+  transition: left 0.2s ease;
+}
+.toggleOn .toggleKnob { left: 19px; }
+
+/* Sliders */
+.fxSliderRow {
+  padding: 8px 12px 0;
+}
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 5px;
+}
+.sliderValue {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255,255,255,0.6);
+}
+.slider {
+  width: 100%;
+  accent-color: #1A537B;
+  cursor: pointer;
+}
