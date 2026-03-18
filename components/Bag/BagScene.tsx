@@ -1,60 +1,443 @@
 'use client';
 
-import { useRef, useEffect, useCallback, Suspense } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import {
   useGLTF,
   OrbitControls,
   Environment,
-  ContactShadows,
-  useProgress,
-  Html,
+  useTexture,
 } from '@react-three/drei';
 import {
   EffectComposer,
   Bloom,
   DepthOfField,
   ToneMapping,
-  ColorAverage,
   HueSaturation,
   BrightnessContrast,
 } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
+import {
+  Mesh,
+  PerspectiveCamera,
+  Plane,
+  ShaderMaterial,
+  UniformsLib,
+  UniformsUtils,
+  Vector3,
+  Vector4,
+  Matrix4,
+  WebGLRenderTarget,
+  HalfFloatType,
+  Color,
+  FrontSide,
+  PlaneGeometry,
+} from 'three';
 import { easing } from 'maath';
 import type { HotspotDef } from './types';
 import type { FXState, CameraPreset } from './BagViewer';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 
 /* ─────────────────────────────────────────────
-   Camera preset definitions
+   Camera presets
 ───────────────────────────────────────────── */
 const CAMERA_PRESETS: Record<CameraPreset, { position: THREE.Vector3; target: THREE.Vector3 }> = {
-//   orbit:  { position: new THREE.Vector3(0, 0.3, 2.8),   target: new THREE.Vector3(0, 0, 0) },
-  front:  { position: new THREE.Vector3(0, 0.1, 2.5),   target: new THREE.Vector3(0, 0, 0) },
-  back:   { position: new THREE.Vector3(0, 0.1, -2.5),  target: new THREE.Vector3(0, 0, 0) },
-  side:   { position: new THREE.Vector3(2.5, 0.1, 0),   target: new THREE.Vector3(0, 0, 0) },
-  top:    { position: new THREE.Vector3(0, 3.2, 0.5),   target: new THREE.Vector3(0, 0, 0) },
+  front: { position: new THREE.Vector3(0, 0.1, 3.3),  target: new THREE.Vector3(0, 0, 0) },
+  back:  { position: new THREE.Vector3(0, 0.1, -2.5), target: new THREE.Vector3(0, 0, 0) },
+  side:  { position: new THREE.Vector3(2.5, 0.1, 0),  target: new THREE.Vector3(0, 0, 0) },
+  // top:   { position: new THREE.Vector3(0, 3.2, 0.5),  target: new THREE.Vector3(0, 0, 0) },
 };
 
+const WATER_Y = -0.70;
 
 /* ─────────────────────────────────────────────
-   Loaded bag mesh
+   Forked realistic water shader
+   Adds on top of three/addons Water:
+   • Depth-based colour (dark abyss → teal at surface)
+   • Sub-surface scattering approximation
+   • Foam / whitecap at wave crests
+   • Micro-bubble shimmer
+   • Soft edge fade so the plane doesn't hard-clip
+   • Tunable reflectivity via uReflectivity
 ───────────────────────────────────────────── */
-interface BagModelProps {
-  url: string;
+const realisticWaterShader = {
+  uniforms: UniformsUtils.merge([
+    UniformsLib['fog'],
+    UniformsLib['lights'],
+    {
+      normalSampler:   { value: null as THREE.Texture | null },
+      mirrorSampler:   { value: null as THREE.Texture | null },
+      alpha:           { value: 1.0 },
+      time:            { value: 0.0 },
+      size:            { value: 2.5 },
+      distortionScale: { value: 1.8 },  // lower = cleaner reflection, bag shape visible
+      textureMatrix:   { value: new Matrix4() },
+      sunColor:        { value: new Color(0x99ccff) },
+      sunDirection:    { value: new Vector3(0.577, 0.577, 0.577) },
+      eye:             { value: new Vector3() },
+      waterColor:      { value: new Color(0x03080f) },
+      // ── Extra realism uniforms ──
+      uReflectivity:   { value: 0.45 },   // 0=no reflection, 1=full mirror
+      uFoamThreshold:  { value: 0.72 },   // wave height above which foam appears
+      uSSSColor:       { value: new Color(0x162035) }, // matches gradient mid
+      uDepthColor:     { value: new Color(0x060c18) }, // matches gradient edge
+      uSurfaceColor:   { value: new Color(0x2a3f5f) }, // matches gradient top
+      uFoamColor:      { value: new Color(0x3a5a8a) }, // blue-toned foam
+    },
+  ]),
+
+  vertexShader: /* glsl */`
+    uniform mat4  textureMatrix;
+    uniform float time;
+
+    varying vec4  mirrorCoord;
+    varying vec4  worldPosition;
+    varying float vWaveHeight; // pass wave "energy" to fragment
+
+    #include <common>
+    #include <fog_pars_vertex>
+    #include <shadowmap_pars_vertex>
+    #include <logdepthbuf_pars_vertex>
+
+    void main() {
+      mirrorCoord  = modelMatrix * vec4(position, 1.0);
+      worldPosition = mirrorCoord.xyzw;
+      mirrorCoord  = textureMatrix * mirrorCoord;
+
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+
+      // We can't actually displace vertices here without recomputing normals,
+      // so we pass the raw UV energy so the fragment shader can simulate depth.
+      vWaveHeight = 0.5; // placeholder — driven by noise in frag
+
+      #include <beginnormal_vertex>
+      #include <defaultnormal_vertex>
+      #include <logdepthbuf_vertex>
+      #include <fog_vertex>
+      #include <shadowmap_vertex>
+    }
+  `,
+
+  fragmentShader: /* glsl */`
+    uniform sampler2D mirrorSampler;
+    uniform float     alpha;
+    uniform float     time;
+    uniform float     size;
+    uniform float     distortionScale;
+    uniform sampler2D normalSampler;
+    uniform vec3      sunColor;
+    uniform vec3      sunDirection;
+    uniform vec3      eye;
+    uniform vec3      waterColor;
+
+    // Realism extras
+    uniform float uReflectivity;
+    uniform float uFoamThreshold;
+    uniform vec3  uSSSColor;
+    uniform vec3  uDepthColor;
+    uniform vec3  uSurfaceColor;
+    uniform vec3  uFoamColor;
+
+    varying vec4  mirrorCoord;
+    varying vec4  worldPosition;
+
+    /* ── Layered noise for organic wave shape ── */
+    vec4 getNoise(vec2 uv) {
+      vec2 uv0 = (uv / 103.0) + vec2(time / 17.0,  time / 29.0);
+      vec2 uv1 =  uv / 107.0  - vec2(time / -19.0, time / 31.0);
+      vec2 uv2 =  uv / vec2(8907.0, 9803.0) + vec2(time / 101.0, time / 97.0);
+      vec2 uv3 =  uv / vec2(1091.0, 1027.0) - vec2(time / 109.0, time / -113.0);
+      return (
+        texture2D(normalSampler, uv0) +
+        texture2D(normalSampler, uv1) +
+        texture2D(normalSampler, uv2) +
+        texture2D(normalSampler, uv3)
+      ) * 0.5 - 1.0;
+    }
+
+    /* ── Extra high-freq ripple noise for micro detail ── */
+    vec4 getMicroNoise(vec2 uv) {
+      vec2 uv0 = uv / 12.0 + vec2(time * 0.08, time * 0.05);
+      vec2 uv1 = uv / 8.0  - vec2(time * 0.06, time * 0.09);
+      return (texture2D(normalSampler, uv0) + texture2D(normalSampler, uv1)) * 0.5 - 1.0;
+    }
+
+    /* ── Specular from sun ── */
+    void sunLight(
+      const vec3 surfNorm, const vec3 eyeDir,
+      float shiny, float spec, float diffuse,
+      inout vec3 diffCol, inout vec3 specCol
+    ) {
+      vec3  refl = normalize(reflect(-sunDirection, surfNorm));
+      float dir  = max(0.0, dot(eyeDir, refl));
+      specCol  += pow(dir, shiny) * sunColor * spec;
+      diffCol  += max(dot(sunDirection, surfNorm), 0.0) * sunColor * diffuse;
+    }
+
+    #include <common>
+    #include <packing>
+    #include <bsdfs>
+    #include <fog_pars_fragment>
+    #include <logdepthbuf_pars_fragment>
+    #include <lights_pars_begin>
+    #include <shadowmap_pars_fragment>
+    #include <shadowmask_pars_fragment>
+
+    void main() {
+      #include <logdepthbuf_fragment>
+
+      vec2 wPos = worldPosition.xz * size;
+
+      /* ── Surface normal from layered noise ── */
+      vec4 noise      = getNoise(wPos);
+      vec4 microNoise = getMicroNoise(wPos * 3.0);
+      // Blend macro + micro normals
+      vec3 surfNorm = normalize(
+        (noise.xzy * vec3(1.5, 1.0, 1.5)) * 0.75 +
+        (microNoise.xzy * vec3(1.0, 1.0, 1.0)) * 0.25
+      );
+
+      /* ── Lighting ── */
+      vec3 diffuseLight  = vec3(0.0);
+      vec3 specularLight = vec3(0.0);
+      vec3 worldToEye    = eye - worldPosition.xyz;
+      vec3 eyeDir        = normalize(worldToEye);
+      float dist         = length(worldToEye);
+
+      // Primary sharp specular (sun glint)
+      sunLight(surfNorm, eyeDir, 220.0, 2.5, 0.4, diffuseLight, specularLight);
+      // Secondary broad specular (sky fill)
+      sunLight(surfNorm, eyeDir,  12.0, 0.4, 0.1, diffuseLight, specularLight);
+
+      /* ── Fresnel reflectance ── */
+      float cosTheta  = max(dot(eyeDir, surfNorm), 0.0);
+      float rf0       = 0.02; // lower base = more reflective at all angles
+      float fresnel   = rf0 + (1.0 - rf0) * pow(1.0 - cosTheta, 4.0);
+      // Apply user reflectivity scale — boosted multiplier for clear bag reflection
+      fresnel *= uReflectivity * 3.5;
+      fresnel  = clamp(fresnel, 0.0, 1.0);
+
+      /* ── Mirror reflection sample ── */
+      vec2 distortion = surfNorm.xz * (0.001 + 1.0 / dist) * distortionScale;
+      vec3 reflSample = texture2D(mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion).rgb;
+      // Keep reflection bright so the bag is clearly visible
+      reflSample *= 1.0;
+
+      /* ── Depth-based water colour ── */
+      // Simulate depth: near the bag base (centre) = darker, edges can be lit
+      float depthFactor = clamp(length(worldPosition.xz) / 5.0, 0.0, 1.0);
+      vec3  waterBody   = mix(uDepthColor, uSurfaceColor, depthFactor * 0.6);
+
+      /* ── Sub-surface scattering approximation ── */
+      // Light passing through the water from above, scattered sideways
+      float sss = pow(max(dot(sunDirection, -eyeDir), 0.0), 3.0) * 0.5;
+      sss      += pow(max(dot(surfNorm, sunDirection), 0.0), 2.0) * 0.3;
+      waterBody = mix(waterBody, uSSSColor, sss * 0.35);
+
+      /* ── Foam / whitecap on wave crests ── */
+      // Use the noise magnitude as a proxy for wave crest height
+      float waveEnergy = length(noise.xz);
+      float foam       = smoothstep(uFoamThreshold, 1.0, waveEnergy);
+      // Extra micro-foam from high-freq noise
+      float microFoam  = smoothstep(0.85, 1.0, length(microNoise.xz)) * 0.4;
+      foam = clamp(foam + microFoam, 0.0, 1.0);
+
+      /* ── Caustic shimmer ── */
+      // Bright flicker where crest normal faces sun directly
+      float caustic = pow(max(dot(surfNorm, sunDirection), 0.0), 18.0)
+                    * (0.5 + 0.5 * sin(waveEnergy * 40.0 - time * 6.0))
+                    * 0.25;
+
+      /* ── Compose ── */
+      // Base: deep water scatter
+      vec3 scatter = (diffuseLight * 0.25 + waterBody) * getShadowMask();
+      // Blend reflection over scatter via Fresnel
+      vec3 colour  = mix(scatter, reflSample + specularLight, fresnel);
+      // Add sub-surface scatter rim
+      colour += uSSSColor * sss * 0.12;
+      // Add caustic twinkle
+      colour += sunColor * caustic;
+      // Blend foam on top — foam breaks up the too-perfect look
+      colour  = mix(colour, uFoamColor * (diffuseLight * 0.5 + 0.5), foam * 0.55);
+
+      /* ── Soft edge fade (avoids hard plane clip) ── */
+      float edgeFade = 1.0 - smoothstep(7.0, 10.0, length(worldPosition.xz));
+
+      gl_FragColor = vec4(colour, alpha * edgeFade);
+
+      #include <tonemapping_fragment>
+      #include <colorspace_fragment>
+      #include <fog_fragment>
+    }
+  `,
+};
+
+/* ─────────────────────────────────────────────
+   WaterPlane — uses forked shader + planar mirror
+───────────────────────────────────────────── */
+function WaterPlane() {
+  const meshRef    = useRef<Mesh | null>(null);
+  const matRef     = useRef<ShaderMaterial | null>(null);
+  const { scene, gl } = useThree();
+  const normalMap  = useTexture('/waternormal4.jpg');
+
+  // Mirror camera internals
+  const mirrorCamera  = useRef(new PerspectiveCamera());
+  const renderTarget  = useRef(
+    new WebGLRenderTarget(512, 512, { type: HalfFloatType })
+  );
+  const textureMatrix = useRef(new Matrix4());
+  const mirrorPlane   = useRef(new Plane());
+  const normal        = useRef(new Vector3());
+  const mirrorWorldPos = useRef(new Vector3());
+  const cameraWorldPos = useRef(new Vector3());
+  const rotMat        = useRef(new Matrix4());
+  const lookAtPos     = useRef(new Vector3(0, 0, -1));
+  const clipPlane     = useRef(new Vector4());
+  const view          = useRef(new Vector3());
+  const target        = useRef(new Vector3());
+  const q             = useRef(new Vector4());
+
+  useEffect(() => {
+    normalMap.wrapS = THREE.RepeatWrapping;
+    normalMap.wrapT = THREE.RepeatWrapping;
+
+    const geometry = new PlaneGeometry(20, 20, 1, 1);
+
+    const material = new ShaderMaterial({
+      name:            'RealisticWater',
+      uniforms:        UniformsUtils.clone(realisticWaterShader.uniforms),
+      vertexShader:    realisticWaterShader.vertexShader,
+      fragmentShader:  realisticWaterShader.fragmentShader,
+      lights:          true,
+      side:            FrontSide,
+      fog:             false,
+      transparent:     true,
+      depthWrite:      false,
+    });
+
+    material.uniforms['mirrorSampler'].value = renderTarget.current.texture;
+    material.uniforms['textureMatrix'].value = textureMatrix.current;
+    material.uniforms['normalSampler'].value = normalMap;
+
+    const mesh = new Mesh(geometry, material);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.y = WATER_Y;
+    mesh.name = 'water';
+
+    scene.add(mesh);
+    meshRef.current = mesh;
+    matRef.current  = material;
+
+    return () => {
+      scene.remove(mesh);
+      geometry.dispose();
+      material.dispose();
+      renderTarget.current.dispose();
+    };
+  }, [scene, normalMap]);
+
+  useFrame(({ camera, clock }, delta) => {
+    const mesh = meshRef.current;
+    const mat  = matRef.current;
+    if (!mesh || !mat) return;
+
+    // ── Advance time ──
+    mat.uniforms['time'].value  += delta * 0.55;
+    mat.uniforms['size'].value   = 2.5;
+
+    // ── Update eye position ──
+    mat.uniforms['eye'].value.setFromMatrixPosition(camera.matrixWorld);
+
+    // ── Compute planar mirror ──
+    mirrorWorldPos.current.setFromMatrixPosition(mesh.matrixWorld);
+    cameraWorldPos.current.setFromMatrixPosition(camera.matrixWorld);
+    rotMat.current.extractRotation(mesh.matrixWorld);
+
+    normal.current.set(0, 0, 1);
+    normal.current.applyMatrix4(rotMat.current);
+
+    view.current.subVectors(mirrorWorldPos.current, cameraWorldPos.current);
+    if (view.current.dot(normal.current) > 0) return; // facing away
+
+    view.current.reflect(normal.current).negate();
+    view.current.add(mirrorWorldPos.current);
+
+    rotMat.current.extractRotation(camera.matrixWorld);
+    lookAtPos.current.set(0, 0, -1);
+    lookAtPos.current.applyMatrix4(rotMat.current);
+    lookAtPos.current.add(cameraWorldPos.current);
+
+    target.current.subVectors(mirrorWorldPos.current, lookAtPos.current);
+    target.current.reflect(normal.current).negate();
+    target.current.add(mirrorWorldPos.current);
+
+    const mc = mirrorCamera.current;
+    mc.position.copy(view.current);
+    mc.up.set(0, 1, 0);
+    mc.up.applyMatrix4(rotMat.current);
+    mc.up.reflect(normal.current);
+    mc.lookAt(target.current);
+    mc.far = camera.far;
+    mc.updateMatrixWorld();
+    mc.projectionMatrix.copy((camera as PerspectiveCamera).projectionMatrix);
+
+    textureMatrix.current.set(
+      0.5, 0, 0, 0.5,
+      0, 0.5, 0, 0.5,
+      0, 0, 0.5, 0.5,
+      0, 0, 0, 1
+    );
+    textureMatrix.current.multiply(mc.projectionMatrix);
+    textureMatrix.current.multiply(mc.matrixWorldInverse);
+
+    mirrorPlane.current.setFromNormalAndCoplanarPoint(normal.current, mirrorWorldPos.current);
+    mirrorPlane.current.applyMatrix4(mc.matrixWorldInverse);
+
+    const cp  = clipPlane.current;
+    const mp  = mirrorPlane.current;
+    cp.set(mp.normal.x, mp.normal.y, mp.normal.z, mp.constant);
+
+    const pm = mc.projectionMatrix;
+    q.current.x = (Math.sign(cp.x) + pm.elements[8])  / pm.elements[0];
+    q.current.y = (Math.sign(cp.y) + pm.elements[9])  / pm.elements[5];
+    q.current.z = -1.0;
+    q.current.w = (1.0 + pm.elements[10]) / pm.elements[14];
+
+    cp.multiplyScalar(2.0 / cp.dot(q.current));
+    pm.elements[2]  = cp.x;
+    pm.elements[6]  = cp.y;
+    pm.elements[10] = cp.z + 1.0 - 0.001; // clipBias
+    pm.elements[14] = cp.w;
+
+    // ── Render mirror pass ──
+    const currentRT = gl.getRenderTarget();
+    mesh.visible    = false;
+    gl.setRenderTarget(renderTarget.current);
+    gl.state.buffers.depth.setMask(true);
+    gl.clear();
+    gl.render(scene, mc);
+    mesh.visible    = true;
+    gl.setRenderTarget(currentRT);
+  });
+
+  return null;
 }
 
-function BagModel({ url }: BagModelProps) {
+/* ─────────────────────────────────────────────
+   Bag mesh
+───────────────────────────────────────────── */
+function BagModel({ url }: { url: string }) {
   const { scene } = useGLTF(url);
 
   useEffect(() => {
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        mesh.castShadow = true;
+        mesh.castShadow    = true;
         mesh.receiveShadow = true;
-        // Ensure physically correct materials
         if (mesh.material) {
           const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
           mats.forEach((mat) => {
@@ -67,13 +450,10 @@ function BagModel({ url }: BagModelProps) {
       }
     });
 
-    // Auto-center and scale to fit unit box
-    const box = new THREE.Box3().setFromObject(scene);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const scale = 1.6 / maxDim;
+    const box   = new THREE.Box3().setFromObject(scene);
+    const size  = box.getSize(new THREE.Vector3());
+    const scale = 1.6 / Math.max(size.x, size.y, size.z);
     scene.scale.setScalar(scale);
-
     const center = box.getCenter(new THREE.Vector3()).multiplyScalar(scale);
     scene.position.sub(center);
   }, [scene]);
@@ -82,28 +462,26 @@ function BagModel({ url }: BagModelProps) {
 }
 
 /* ─────────────────────────────────────────────
-   Smooth camera controller
+   Camera rig
 ───────────────────────────────────────────── */
-interface CameraRigProps {
+function CameraRig({
+  preset, flyTarget, controlsRef,
+}: {
   preset: CameraPreset;
   flyTarget: { position: THREE.Vector3; target: THREE.Vector3 } | null;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
-}
-
-function CameraRig({ preset, flyTarget, controlsRef }: CameraRigProps) {
+}) {
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3());
+  const targetPos    = useRef(new THREE.Vector3());
   const targetLookAt = useRef(new THREE.Vector3());
-  const isFlying = useRef(false);
 
   useEffect(() => {
     const dest = flyTarget ?? CAMERA_PRESETS[preset];
     targetPos.current.copy(dest.position);
     targetLookAt.current.copy(dest.target);
-    isFlying.current = true;
   }, [preset, flyTarget]);
 
-  useFrame((_state, delta) => {
+  useFrame((_s, delta) => {
     easing.damp3(camera.position, targetPos.current, 0.35, delta);
     if (controlsRef.current) {
       easing.damp3(controlsRef.current.target, targetLookAt.current, 0.35, delta);
@@ -115,38 +493,33 @@ function CameraRig({ preset, flyTarget, controlsRef }: CameraRigProps) {
 }
 
 /* ─────────────────────────────────────────────
-   Hotspot world → screen projection
+   Hotspot tracker
 ───────────────────────────────────────────── */
-interface HotspotTrackerProps {
+function HotspotTracker({
+  hotspots, onPositionsUpdate,
+}: {
   hotspots: HotspotDef[];
-  onPositionsUpdate: (positions: Record<string, { x: number; y: number; visible: boolean }>) => void;
-}
-
-function HotspotTracker({ hotspots, onPositionsUpdate }: HotspotTrackerProps) {
+  onPositionsUpdate: (p: Record<string, { x: number; y: number; visible: boolean }>) => void;
+}) {
   const { camera, size } = useThree();
-  const tmpVec = useRef(new THREE.Vector3());
-  const frustum = useRef(new THREE.Frustum());
+  const tmpVec     = useRef(new THREE.Vector3());
+  const frustum    = useRef(new THREE.Frustum());
   const projMatrix = useRef(new THREE.Matrix4());
 
   useFrame(() => {
     projMatrix.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     frustum.current.setFromProjectionMatrix(projMatrix.current);
-
     const positions: Record<string, { x: number; y: number; visible: boolean }> = {};
-
     hotspots.forEach(({ id, position }) => {
       tmpVec.current.set(...position);
       const inFrustum = frustum.current.containsPoint(tmpVec.current);
       tmpVec.current.project(camera);
-
-      const x = (tmpVec.current.x * 0.5 + 0.5) * size.width;
-      const y = (-tmpVec.current.y * 0.5 + 0.5) * size.height;
-      // visible if in front of camera and in frustum
-      const visible = inFrustum && tmpVec.current.z < 1;
-
-      positions[id] = { x, y, visible };
+      positions[id] = {
+        x: (tmpVec.current.x * 0.5 + 0.5) * size.width,
+        y: (-tmpVec.current.y * 0.5 + 0.5) * size.height,
+        visible: inFrustum && tmpVec.current.z < 1,
+      };
     });
-
     onPositionsUpdate(positions);
   });
 
@@ -154,78 +527,57 @@ function HotspotTracker({ hotspots, onPositionsUpdate }: HotspotTrackerProps) {
 }
 
 /* ─────────────────────────────────────────────
-   Post-processing stack
+   Post FX
 ───────────────────────────────────────────── */
-interface PostFXProps {
-  fx: FXState;
-}
-
-function PostFX({ fx }: PostFXProps) {
+function PostFX({ fx }: { fx: FXState }) {
   return (
     <EffectComposer multisampling={4}>
       {fx.bloom ? (
-        <Bloom
-          intensity={fx.bloomIntensity}
-          luminanceThreshold={0.55}
-          luminanceSmoothing={0.6}
-          mipmapBlur
-        />
+        <Bloom intensity={fx.bloomIntensity} luminanceThreshold={0.55} luminanceSmoothing={0.6} mipmapBlur />
       ) : <></>}
-
       {fx.dof ? (
-        <DepthOfField
-          focusDistance={fx.dofFocusDistance}
-          focalLength={0.06}
-          bokehScale={fx.dofBokehScale}
-        />
+        <DepthOfField focusDistance={fx.dofFocusDistance} focalLength={0.06} bokehScale={fx.dofBokehScale} />
       ) : <></>}
-
       {fx.colorGrading ? (
         <>
           <HueSaturation saturation={fx.saturation - 1} />
           <BrightnessContrast brightness={fx.exposure - 1} contrast={0.05} />
         </>
       ) : <></>}
-
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Scene lighting
+   Lighting
 ───────────────────────────────────────────── */
 function Lighting() {
   return (
     <>
-      {/* Key light */}
       <directionalLight
-        position={[3, 5, 3]}
-        intensity={1}
-        castShadow
+        position={[3, 5, 3]} intensity={1} castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={0.1}
-        shadow-camera-far={10}
-        shadow-camera-left={-3}
-        shadow-camera-right={1}
-        shadow-camera-top={1}
-        shadow-camera-bottom={-3}
+        shadow-camera-near={0.1} shadow-camera-far={10}
+        shadow-camera-left={-3} shadow-camera-right={10}
+        shadow-camera-top={1}   shadow-camera-bottom={-3}
         shadow-bias={-0.0005}
       />
-      {/* Fill light */}
       <directionalLight position={[-3, 2, -2]} intensity={0.8} color="#b8d4ff" />
-      {/* Rim light */}
       <directionalLight position={[0, -1, -4]} intensity={0.5} color="#ffe8c0" />
-      {/* Ambient */}
       <ambientLight intensity={0.4} />
     </>
   );
 }
 
 /* ─────────────────────────────────────────────
-   Root scene component (exported)
+   Root export
 ───────────────────────────────────────────── */
-interface BagSceneProps {
+useGLTF.preload('/bag.glb');
+
+export default function BagScene({
+  modelUrl, activeCamera, flyingTo, hotspots, fx, onHotspotPositionsUpdate,
+}: {
   modelUrl: string;
   activeCamera: CameraPreset;
   flyingTo: string | null;
@@ -234,19 +586,7 @@ interface BagSceneProps {
   onHotspotPositionsUpdate: (
     positions: Record<string, { x: number; y: number; visible: boolean }>
   ) => void;
-}
-
-// Preload as soon as the module is imported — starts fetching before Canvas mounts
-useGLTF.preload('/bag.glb');
-
-export default function BagScene({
-  modelUrl,
-  activeCamera,
-  flyingTo,
-  hotspots,
-  fx,
-  onHotspotPositionsUpdate,
-}: BagSceneProps) {
+}) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
 
   const flyTarget = flyingTo
@@ -255,7 +595,7 @@ export default function BagScene({
         if (!hs) return null;
         return {
           position: new THREE.Vector3(...hs.cameraPosition),
-          target: new THREE.Vector3(...hs.cameraTarget),
+          target:   new THREE.Vector3(...hs.cameraTarget),
         };
       })()
     : null;
@@ -272,55 +612,28 @@ export default function BagScene({
       }}
       style={{ background: 'transparent' }}
     >
-      {/* Environment IBL */}
       <Environment preset="studio" backgroundBlurriness={1} />
-
-      {/* Lights */}
       <Lighting />
 
-      
-
-      {/* Ground shadow */}
-      {/* <ContactShadows
-        position={[0, -0.85, 0]}
-        opacity={0.55}
-        scale={4}
-        blur={2.5}
-        far={2}
-        color="#000022"
-      /> */}
-
-      {/* Bag model */}
       <Suspense fallback={null}>
         <BagModel url={modelUrl} />
       </Suspense>
 
-      {/* Camera rig + orbit */}
-      <CameraRig
-        preset={activeCamera}
-        flyTarget={flyTarget}
-        controlsRef={controlsRef}
-      />
+      <WaterPlane />
+
+      <CameraRig preset={activeCamera} flyTarget={flyTarget} controlsRef={controlsRef} />
       <OrbitControls
         ref={controlsRef}
-        enablePan={false}
-        enableZoom={false}
-        enableRotate={false}
+        enablePan={false} enableZoom={false} 
         enableDamping={false}
-        minDistance={0.8}
-        maxDistance={6}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI}
+        minDistance={0.8} maxDistance={6}
+        minPolarAngle={Math.PI / 2}   // 30° — can't look straight down
+  maxPolarAngle={Math.PI / 0.8} // ~65° — can't go to the side
+  enableRotate={true} 
         makeDefault
       />
 
-      {/* Hotspot world → screen tracker */}
-      <HotspotTracker
-        hotspots={hotspots}
-        onPositionsUpdate={onHotspotPositionsUpdate}
-      />
-
-      {/* Post-processing */}
+      <HotspotTracker hotspots={hotspots} onPositionsUpdate={onHotspotPositionsUpdate} />
       <PostFX fx={fx} />
     </Canvas>
   );

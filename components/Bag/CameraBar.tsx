@@ -9,7 +9,7 @@ const PRESETS: { id: CameraPreset; label: string }[] = [
   { id: 'front', label: 'Front' },
   { id: 'back',  label: 'Back'  },
   { id: 'side',  label: 'Side'  },
-  { id: 'top',   label: 'Top'   },
+  // { id: 'top',   label: 'Top'   },
 ];
 
 interface CameraBarProps {

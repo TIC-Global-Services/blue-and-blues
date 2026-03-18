@@ -14,7 +14,7 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
   return (
    <aside
    className={`
-    fixed top-0 right-0 h-full w-[350px] z-100
+    fixed top-0 right-0 h-full w-[350px] z-9999
     backdrop-blur-lg bg-white/10 border-l border-y border-white/20
     transition-transform duration-300
     ${activeHotspot?.open ? 'translate-x-0' : 'translate-x-full'}

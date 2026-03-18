@@ -191,7 +191,7 @@ const Hero = () => {
 
           {/* Bottom-right — body copy + CTA */}
           <motion.div
-            className="absolute right-[2%] bottom-[8%] max-w-xs space-y-5 pointer-events-auto"
+            className="absolute right-[2%] bottom-[8%] max-w-xs space-y-5 pointer-events-auto z-40"
             variants={copyVariants}
             initial="hidden"
             animate={heroVisible ? 'visible' : 'hidden'}

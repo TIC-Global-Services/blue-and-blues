@@ -12,7 +12,7 @@ import styles from './BagViewer.module.css';
 // Dynamically import the canvas to avoid SSR issues
 const BagScene = dynamic(() => import('./BagScene'), { ssr: false });
 
-export type CameraPreset = 'front' | 'back' | 'side' | 'top';
+export type CameraPreset = 'front' | 'back' | 'side';
 
 export interface FXState {
   bloom: boolean;
@@ -27,12 +27,12 @@ export interface FXState {
 
 const DEFAULT_FX: FXState = {
   bloom: false,
-  bloomIntensity: 0.2,
+  bloomIntensity: 0.8,
   dof: false,
   dofFocusDistance: 0.02,
   dofBokehScale: 3,
   colorGrading: true,
-  exposure: 1,
+  exposure: 0.95,
   saturation: 0.8,
 };
 
