@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import { useRef, useEffect, Suspense } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { useRef, useEffect, Suspense } from "react";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import {
   useGLTF,
   OrbitControls,
   Environment,
   useTexture,
-} from '@react-three/drei';
+} from "@react-three/drei";
 import {
   EffectComposer,
   Bloom,
@@ -15,9 +15,9 @@ import {
   ToneMapping,
   HueSaturation,
   BrightnessContrast,
-} from '@react-three/postprocessing';
-import { ToneMappingMode } from 'postprocessing';
-import * as THREE from 'three';
+} from "@react-three/postprocessing";
+import { ToneMappingMode } from "postprocessing";
+import * as THREE from "three";
 import {
   Mesh,
   PerspectiveCamera,
@@ -33,23 +33,35 @@ import {
   Color,
   FrontSide,
   PlaneGeometry,
-} from 'three';
-import { easing } from 'maath';
-import type { HotspotDef } from './types';
-import type { FXState, CameraPreset } from './BagViewer';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+} from "three";
+import { easing } from "maath";
+import type { HotspotDef } from "./types";
+import type { FXState, CameraPreset } from "./BagViewer";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 /* ─────────────────────────────────────────────
    Camera presets
 ───────────────────────────────────────────── */
-const CAMERA_PRESETS: Record<CameraPreset, { position: THREE.Vector3; target: THREE.Vector3 }> = {
-  front: { position: new THREE.Vector3(0, 0.1, 3.3),  target: new THREE.Vector3(0, 0, 0) },
-  back:  { position: new THREE.Vector3(0, 0.1, -2.5), target: new THREE.Vector3(0, 0, 0) },
-  side:  { position: new THREE.Vector3(2.5, 0.1, 0),  target: new THREE.Vector3(0, 0, 0) },
+const CAMERA_PRESETS: Record<
+  CameraPreset,
+  { position: THREE.Vector3; target: THREE.Vector3 }
+> = {
+  front: {
+    position: new THREE.Vector3(0, 0.1, 3.3),
+    target: new THREE.Vector3(0, 0, 0),
+  },
+  back: {
+    position: new THREE.Vector3(0, 0.1, -2.5),
+    target: new THREE.Vector3(0, 0, 0),
+  },
+  side: {
+    position: new THREE.Vector3(2.5, 0.1, 0),
+    target: new THREE.Vector3(0, 0, 0),
+  },
   // top:   { position: new THREE.Vector3(0, 3.2, 0.5),  target: new THREE.Vector3(0, 0, 0) },
 };
 
-const WATER_Y = -0.70;
+const WATER_Y = -0.7;
 
 /* ─────────────────────────────────────────────
    Forked realistic water shader
@@ -63,33 +75,33 @@ const WATER_Y = -0.70;
 ───────────────────────────────────────────── */
 const realisticWaterShader = {
   uniforms: UniformsUtils.merge([
-    UniformsLib['fog'],
-    UniformsLib['lights'],
+    UniformsLib["fog"],
+    UniformsLib["lights"],
     {
-      normalSampler:   { value: null as THREE.Texture | null },
-      mirrorSampler:   { value: null as THREE.Texture | null },
-      alpha:           { value: 1.0 },
-      time:            { value: 0.0 },
-      size:            { value: 2.5 },
-      distortionScale: { value: 0.5 },  // lower = cleaner reflection, bag shape visible
-      textureMatrix:   { value: new Matrix4() },
-      sunColor:        { value: new Color(0x99ccff) },
-      sunDirection:    { value: new Vector3(0.577, 0.577, 0.577) },
-      eye:             { value: new Vector3() },
-      waterColor:      { value: new Color(0x03080f) },
+      normalSampler: { value: null as THREE.Texture | null },
+      mirrorSampler: { value: null as THREE.Texture | null },
+      alpha: { value: 1.0 },
+      time: { value: 0.0 },
+      size: { value: 2.5 },
+      distortionScale: { value: 0.5 }, // lower = cleaner reflection, bag shape visible
+      textureMatrix: { value: new Matrix4() },
+      sunColor: { value: new Color(0x99ccff) },
+      sunDirection: { value: new Vector3(0.577, 0.577, 0.577) },
+      eye: { value: new Vector3() },
+      waterColor: { value: new Color(0x03080f) },
       // ── Extra realism uniforms ──
-      uReflectivity:   { value: 0.85 },   // 0=no reflection, 1=full mirror
-      uFoamThreshold:  { value: 0.72 },   // wave height above which foam appears
-      uSSSColor:       { value: new Color(0x162035) }, // matches gradient mid
-      uDepthColor:     { value: new Color(0x060c18) }, // matches gradient edge
-      uSurfaceColor:   { value: new Color(0x2a3f5f) }, // matches gradient top
-      uFoamColor:      { value: new Color(0x3a5a8a) }, // blue-toned foam
-      uRippleSpeed:    { value: 1.2 },   // how fast rings travel outward
-      uRippleStrength: { value: 0.15 },  // how much radial rings perturb the normal
+      uReflectivity: { value: 0.85 }, // 0=no reflection, 1=full mirror
+      uFoamThreshold: { value: 0.72 }, // wave height above which foam appears
+      uSSSColor: { value: new Color(0x162035) }, // matches gradient mid
+      uDepthColor: { value: new Color(0x060c18) }, // matches gradient edge
+      uSurfaceColor: { value: new Color(0x2a3f5f) }, // matches gradient top
+      uFoamColor: { value: new Color(0x3a5a8a) }, // blue-toned foam
+      uRippleSpeed: { value: 1.2 }, // how fast rings travel outward
+      uRippleStrength: { value: 0.15 }, // how much radial rings perturb the normal
     },
   ]),
 
-  vertexShader: /* glsl */`
+  vertexShader: /* glsl */ `
     uniform mat4  textureMatrix;
     uniform float time;
 
@@ -122,7 +134,7 @@ const realisticWaterShader = {
     }
   `,
 
-  fragmentShader: /* glsl */`
+  fragmentShader: /* glsl */ `
     uniform sampler2D mirrorSampler;
     uniform float     alpha;
     uniform float     time;
@@ -243,8 +255,8 @@ const realisticWaterShader = {
       fresnel  = clamp(fresnel, 0.0, 1.0);
 
       /* ── Mirror reflection sample ── */
-      vec2 distortion = surfNorm.xz * (0.001 + 1.0 / dist) * distortionScale;
-      vec3 reflSample = texture2D(mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion).rgb;
+     vec2 distortion = surfNorm.xz * (0.001 + 1.0 / dist) * distortionScale;
+vec3 reflSample = texture2D(mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion).rgb;
       // Keep reflection bright so the bag is clearly visible
       reflSample *= 1.0;
 
@@ -301,27 +313,27 @@ const realisticWaterShader = {
    WaterPlane — uses forked shader + planar mirror
 ───────────────────────────────────────────── */
 function WaterPlane() {
-  const meshRef    = useRef<Mesh | null>(null);
-  const matRef     = useRef<ShaderMaterial | null>(null);
+  const meshRef = useRef<Mesh | null>(null);
+  const matRef = useRef<ShaderMaterial | null>(null);
   const { scene, gl } = useThree();
-  const normalMap  = useTexture('/waternormal4.jpg');
+  const normalMap = useTexture("/waternormal4.jpg");
 
   // Mirror camera internals
-  const mirrorCamera  = useRef(new PerspectiveCamera());
-  const renderTarget  = useRef(
-    new WebGLRenderTarget(512, 512, { type: HalfFloatType })
+  const mirrorCamera = useRef(new PerspectiveCamera());
+  const renderTarget = useRef(
+    new WebGLRenderTarget(512, 512, { type: HalfFloatType }),
   );
   const textureMatrix = useRef(new Matrix4());
-  const mirrorPlane   = useRef(new Plane());
-  const normal        = useRef(new Vector3());
+  const mirrorPlane = useRef(new Plane());
+  const normal = useRef(new Vector3());
   const mirrorWorldPos = useRef(new Vector3());
   const cameraWorldPos = useRef(new Vector3());
-  const rotMat        = useRef(new Matrix4());
-  const lookAtPos     = useRef(new Vector3(0, 0, -1));
-  const clipPlane     = useRef(new Vector4());
-  const view          = useRef(new Vector3());
-  const target        = useRef(new Vector3());
-  const q             = useRef(new Vector4());
+  const rotMat = useRef(new Matrix4());
+  const lookAtPos = useRef(new Vector3(0, 0, -1));
+  const clipPlane = useRef(new Vector4());
+  const view = useRef(new Vector3());
+  const target = useRef(new Vector3());
+  const q = useRef(new Vector4());
 
   useEffect(() => {
     normalMap.wrapS = THREE.RepeatWrapping;
@@ -330,29 +342,29 @@ function WaterPlane() {
     const geometry = new PlaneGeometry(20, 20, 1, 1);
 
     const material = new ShaderMaterial({
-      name:            'RealisticWater',
-      uniforms:        UniformsUtils.clone(realisticWaterShader.uniforms),
-      vertexShader:    realisticWaterShader.vertexShader,
-      fragmentShader:  realisticWaterShader.fragmentShader,
-      lights:          true,
-      side:            FrontSide,
-      fog:             false,
-      transparent:     true,
-      depthWrite:      false,
+      name: "RealisticWater",
+      uniforms: UniformsUtils.clone(realisticWaterShader.uniforms),
+      vertexShader: realisticWaterShader.vertexShader,
+      fragmentShader: realisticWaterShader.fragmentShader,
+      lights: true,
+      side: FrontSide,
+      fog: false,
+      transparent: true,
+      depthWrite: false,
     });
 
-    material.uniforms['mirrorSampler'].value = renderTarget.current.texture;
-    material.uniforms['textureMatrix'].value = textureMatrix.current;
-    material.uniforms['normalSampler'].value = normalMap;
+    material.uniforms["mirrorSampler"].value = renderTarget.current.texture;
+    material.uniforms["textureMatrix"].value = textureMatrix.current;
+    material.uniforms["normalSampler"].value = normalMap;
 
     const mesh = new Mesh(geometry, material);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = WATER_Y;
-    mesh.name = 'water';
+    mesh.name = "water";
 
     scene.add(mesh);
     meshRef.current = mesh;
-    matRef.current  = material;
+    matRef.current = material;
 
     return () => {
       scene.remove(mesh);
@@ -364,17 +376,17 @@ function WaterPlane() {
 
   useFrame(({ camera, clock }, delta) => {
     const mesh = meshRef.current;
-    const mat  = matRef.current;
+    const mat = matRef.current;
     if (!mesh || !mat) return;
 
     // ── Advance time ──
-    mat.uniforms['time'].value  += delta * 0.55;
-    mat.uniforms['size'].value   = 2.5;
-    mat.uniforms['uRippleSpeed'].value    = 1.2;  // rings travel speed
-    mat.uniforms['uRippleStrength'].value = 0.55; // ring normal intensity
+    mat.uniforms["time"].value += delta * 0.55;
+    mat.uniforms["size"].value = 2.5;
+    mat.uniforms["uRippleSpeed"].value = 1.2; // rings travel speed
+    mat.uniforms["uRippleStrength"].value = 0.55; // ring normal intensity
 
     // ── Update eye position ──
-    mat.uniforms['eye'].value.setFromMatrixPosition(camera.matrixWorld);
+    mat.uniforms["eye"].value.setFromMatrixPosition(camera.matrixWorld);
 
     // ── Compute planar mirror ──
     mirrorWorldPos.current.setFromMatrixPosition(mesh.matrixWorld);
@@ -410,41 +422,56 @@ function WaterPlane() {
     mc.projectionMatrix.copy((camera as PerspectiveCamera).projectionMatrix);
 
     textureMatrix.current.set(
-      0.5, 0, 0, 0.5,
-      0, 0.5, 0, 0.5,
-      0, 0, 0.5, 0.5,
-      0, 0, 0, 1
+      0.5,
+      0,
+      0,
+      0.5,
+      0,
+      0.5,
+      0,
+      0.5,
+      0,
+      0,
+      0.5,
+      0.5,
+      0,
+      0,
+      0,
+      1,
     );
     textureMatrix.current.multiply(mc.projectionMatrix);
     textureMatrix.current.multiply(mc.matrixWorldInverse);
 
-    mirrorPlane.current.setFromNormalAndCoplanarPoint(normal.current, mirrorWorldPos.current);
+    mirrorPlane.current.setFromNormalAndCoplanarPoint(
+      normal.current,
+      mirrorWorldPos.current,
+    );
     mirrorPlane.current.applyMatrix4(mc.matrixWorldInverse);
 
-    const cp  = clipPlane.current;
-    const mp  = mirrorPlane.current;
+    const cp = clipPlane.current;
+    const mp = mirrorPlane.current;
     cp.set(mp.normal.x, mp.normal.y, mp.normal.z, mp.constant);
 
     const pm = mc.projectionMatrix;
-    q.current.x = (Math.sign(cp.x) + pm.elements[8])  / pm.elements[0];
-    q.current.y = (Math.sign(cp.y) + pm.elements[9])  / pm.elements[5];
+    q.current.x = (Math.sign(cp.x) + pm.elements[8]) / pm.elements[0];
+    q.current.y = (Math.sign(cp.y) + pm.elements[9]) / pm.elements[5];
     q.current.z = -1.0;
     q.current.w = (1.0 + pm.elements[10]) / pm.elements[14];
 
     cp.multiplyScalar(2.0 / cp.dot(q.current));
-    pm.elements[2]  = cp.x;
-    pm.elements[6]  = cp.y;
+    pm.elements[2] = cp.x;
+    pm.elements[6] = cp.y;
     pm.elements[10] = cp.z + 1.0 - 0.001; // clipBias
     pm.elements[14] = cp.w;
 
     // ── Render mirror pass ──
     const currentRT = gl.getRenderTarget();
-    mesh.visible    = false;
+    mesh.visible = false;
     gl.setRenderTarget(renderTarget.current);
     gl.state.buffers.depth.setMask(true);
     gl.clear();
     gl.render(scene, mc);
-    mesh.visible    = true;
+    mesh.visible = true;
     gl.setRenderTarget(currentRT);
   });
 
@@ -461,10 +488,12 @@ function BagModel({ url }: { url: string }) {
     scene.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
-        mesh.castShadow    = true;
+        mesh.castShadow = true;
         mesh.receiveShadow = true;
         if (mesh.material) {
-          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          const mats = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
           mats.forEach((mat) => {
             if (mat instanceof THREE.MeshStandardMaterial) {
               mat.envMapIntensity = 1.2;
@@ -475,8 +504,8 @@ function BagModel({ url }: { url: string }) {
       }
     });
 
-    const box   = new THREE.Box3().setFromObject(scene);
-    const size  = box.getSize(new THREE.Vector3());
+    const box = new THREE.Box3().setFromObject(scene);
+    const size = box.getSize(new THREE.Vector3());
     const scale = 1.6 / Math.max(size.x, size.y, size.z);
     scene.scale.setScalar(scale);
     const center = box.getCenter(new THREE.Vector3()).multiplyScalar(scale);
@@ -490,14 +519,16 @@ function BagModel({ url }: { url: string }) {
    Camera rig
 ───────────────────────────────────────────── */
 function CameraRig({
-  preset, flyTarget, controlsRef,
+  preset,
+  flyTarget,
+  controlsRef,
 }: {
   preset: CameraPreset;
   flyTarget: { position: THREE.Vector3; target: THREE.Vector3 } | null;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }) {
   const { camera } = useThree();
-  const targetPos    = useRef(new THREE.Vector3());
+  const targetPos = useRef(new THREE.Vector3());
   const targetLookAt = useRef(new THREE.Vector3());
 
   useEffect(() => {
@@ -509,7 +540,12 @@ function CameraRig({
   useFrame((_s, delta) => {
     easing.damp3(camera.position, targetPos.current, 0.35, delta);
     if (controlsRef.current) {
-      easing.damp3(controlsRef.current.target, targetLookAt.current, 0.35, delta);
+      easing.damp3(
+        controlsRef.current.target,
+        targetLookAt.current,
+        0.35,
+        delta,
+      );
       controlsRef.current.update();
     }
   });
@@ -521,20 +557,29 @@ function CameraRig({
    Hotspot tracker
 ───────────────────────────────────────────── */
 function HotspotTracker({
-  hotspots, onPositionsUpdate,
+  hotspots,
+  onPositionsUpdate,
 }: {
   hotspots: HotspotDef[];
-  onPositionsUpdate: (p: Record<string, { x: number; y: number; visible: boolean }>) => void;
+  onPositionsUpdate: (
+    p: Record<string, { x: number; y: number; visible: boolean }>,
+  ) => void;
 }) {
   const { camera, size } = useThree();
-  const tmpVec     = useRef(new THREE.Vector3());
-  const frustum    = useRef(new THREE.Frustum());
+  const tmpVec = useRef(new THREE.Vector3());
+  const frustum = useRef(new THREE.Frustum());
   const projMatrix = useRef(new THREE.Matrix4());
 
   useFrame(() => {
-    projMatrix.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    projMatrix.current.multiplyMatrices(
+      camera.projectionMatrix,
+      camera.matrixWorldInverse,
+    );
     frustum.current.setFromProjectionMatrix(projMatrix.current);
-    const positions: Record<string, { x: number; y: number; visible: boolean }> = {};
+    const positions: Record<
+      string,
+      { x: number; y: number; visible: boolean }
+    > = {};
     hotspots.forEach(({ id, position }) => {
       tmpVec.current.set(...position);
       const inFrustum = frustum.current.containsPoint(tmpVec.current);
@@ -558,17 +603,32 @@ function PostFX({ fx }: { fx: FXState }) {
   return (
     <EffectComposer multisampling={4}>
       {fx.bloom ? (
-        <Bloom intensity={fx.bloomIntensity} luminanceThreshold={0.55} luminanceSmoothing={0.6} mipmapBlur />
-      ) : <></>}
+        <Bloom
+          intensity={fx.bloomIntensity}
+          luminanceThreshold={0.55}
+          luminanceSmoothing={0.6}
+          mipmapBlur
+        />
+      ) : (
+        <></>
+      )}
       {fx.dof ? (
-        <DepthOfField focusDistance={fx.dofFocusDistance} focalLength={0.06} bokehScale={fx.dofBokehScale} />
-      ) : <></>}
+        <DepthOfField
+          focusDistance={fx.dofFocusDistance}
+          focalLength={0.06}
+          bokehScale={fx.dofBokehScale}
+        />
+      ) : (
+        <></>
+      )}
       {fx.colorGrading ? (
         <>
           <HueSaturation saturation={fx.saturation - 1} />
           <BrightnessContrast brightness={fx.exposure - 1} contrast={0.05} />
         </>
-      ) : <></>}
+      ) : (
+        <></>
+      )}
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
@@ -581,15 +641,28 @@ function Lighting() {
   return (
     <>
       <directionalLight
-        position={[3, 5, 3]} intensity={1} castShadow
+        position={[3, 5, 3]}
+        intensity={1}
+        castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={0.1} shadow-camera-far={10}
-        shadow-camera-left={-3} shadow-camera-right={10}
-        shadow-camera-top={1}   shadow-camera-bottom={-3}
+        shadow-camera-near={0.1}
+        shadow-camera-far={10}
+        shadow-camera-left={-3}
+        shadow-camera-right={10}
+        shadow-camera-top={1}
+        shadow-camera-bottom={-3}
         shadow-bias={-0.0005}
       />
-      <directionalLight position={[-3, 2, -2]} intensity={0.8} color="#b8d4ff" />
-      <directionalLight position={[0, -1, -4]} intensity={0.5} color="#ffe8c0" />
+      <directionalLight
+        position={[-3, 2, -2]}
+        intensity={0.8}
+        color="#b8d4ff"
+      />
+      <directionalLight
+        position={[0, -1, -4]}
+        intensity={0.5}
+        color="#ffe8c0"
+      />
       <ambientLight intensity={1} />
     </>
   );
@@ -598,10 +671,15 @@ function Lighting() {
 /* ─────────────────────────────────────────────
    Root export
 ───────────────────────────────────────────── */
-useGLTF.preload('/bag.glb');
+useGLTF.preload("/bag.glb");
 
 export default function BagScene({
-  modelUrl, activeCamera, flyingTo, hotspots, fx, onHotspotPositionsUpdate,
+  modelUrl,
+  activeCamera,
+  flyingTo,
+  hotspots,
+  fx,
+  onHotspotPositionsUpdate,
 }: {
   modelUrl: string;
   activeCamera: CameraPreset;
@@ -609,7 +687,7 @@ export default function BagScene({
   hotspots: HotspotDef[];
   fx: FXState;
   onHotspotPositionsUpdate: (
-    positions: Record<string, { x: number; y: number; visible: boolean }>
+    positions: Record<string, { x: number; y: number; visible: boolean }>,
   ) => void;
 }) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -620,7 +698,7 @@ export default function BagScene({
         if (!hs) return null;
         return {
           position: new THREE.Vector3(...hs.cameraPosition),
-          target:   new THREE.Vector3(...hs.cameraTarget),
+          target: new THREE.Vector3(...hs.cameraTarget),
         };
       })()
     : null;
@@ -635,7 +713,7 @@ export default function BagScene({
         toneMappingExposure: 0.8,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
-      style={{ background: 'transparent' }}
+      style={{ background: "transparent" }}
     >
       <Environment preset="studio" backgroundBlurriness={1} />
       <Lighting />
@@ -646,17 +724,28 @@ export default function BagScene({
 
       <WaterPlane />
 
-      <CameraRig preset={activeCamera} flyTarget={flyTarget} controlsRef={controlsRef} />
+      <CameraRig
+        preset={activeCamera}
+        flyTarget={flyTarget}
+        controlsRef={controlsRef}
+      />
       <OrbitControls
         ref={controlsRef}
-        enablePan={false} enableZoom={false} enableRotate={false}
+        enablePan={false}
+        enableZoom={false}
+        enableRotate={false}
         enableDamping={false}
-        minDistance={0.8} maxDistance={6}
-        minPolarAngle={0} maxPolarAngle={Math.PI}
+        minDistance={0.8}
+        maxDistance={6}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI}
         makeDefault
       />
 
-      <HotspotTracker hotspots={hotspots} onPositionsUpdate={onHotspotPositionsUpdate} />
+      <HotspotTracker
+        hotspots={hotspots}
+        onPositionsUpdate={onHotspotPositionsUpdate}
+      />
       <PostFX fx={fx} />
     </Canvas>
   );
