@@ -14,12 +14,12 @@ const LIGHT_RAYS_PROPS = {
   raysOrigin:     'top-center' as const,
   raysColor:      '#ffffff',
   raysSpeed:      0.5,
-  lightSpread:    0.8,
-  rayLength:      2,
+  lightSpread:    1.5,
+  rayLength:      4,
   followMouse:    true,
   mouseInfluence: 0.1,
   pulsating:      true,
-  fadeDistance:   1.5,
+  fadeDistance:   2,
 };
 
 /* ─── Shared easing ─── */

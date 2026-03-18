@@ -26,13 +26,13 @@ export interface FXState {
 }
 
 const DEFAULT_FX: FXState = {
-  bloom: true,
-  bloomIntensity: 0.8,
+  bloom: false,
+  bloomIntensity: 0.2,
   dof: false,
   dofFocusDistance: 0.02,
   dofBokehScale: 3,
   colorGrading: true,
-  exposure: 1.1,
+  exposure: 0.5,
   saturation: 1.15,
 };
 
