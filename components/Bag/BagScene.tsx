@@ -201,11 +201,11 @@ function Lighting() {
       {/* Key light */}
       <directionalLight
         position={[3, 5, 3]}
-        intensity={0.1}
+        intensity={1}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.1}
-        shadow-camera-far={20}
+        shadow-camera-far={10}
         shadow-camera-left={-3}
         shadow-camera-right={1}
         shadow-camera-top={1}

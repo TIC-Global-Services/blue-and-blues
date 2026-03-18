@@ -32,8 +32,8 @@ const DEFAULT_FX: FXState = {
   dofFocusDistance: 0.02,
   dofBokehScale: 3,
   colorGrading: true,
-  exposure: 0.5,
-  saturation: 1.15,
+  exposure: 1,
+  saturation: 0.8,
 };
 
 interface BagViewerProps {
