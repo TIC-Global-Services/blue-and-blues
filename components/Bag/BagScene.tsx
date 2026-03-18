@@ -71,19 +71,21 @@ const realisticWaterShader = {
       alpha:           { value: 1.0 },
       time:            { value: 0.0 },
       size:            { value: 2.5 },
-      distortionScale: { value: 1.8 },  // lower = cleaner reflection, bag shape visible
+      distortionScale: { value: 0.5 },  // lower = cleaner reflection, bag shape visible
       textureMatrix:   { value: new Matrix4() },
       sunColor:        { value: new Color(0x99ccff) },
       sunDirection:    { value: new Vector3(0.577, 0.577, 0.577) },
       eye:             { value: new Vector3() },
       waterColor:      { value: new Color(0x03080f) },
       // ── Extra realism uniforms ──
-      uReflectivity:   { value: 0.45 },   // 0=no reflection, 1=full mirror
+      uReflectivity:   { value: 0.85 },   // 0=no reflection, 1=full mirror
       uFoamThreshold:  { value: 0.72 },   // wave height above which foam appears
       uSSSColor:       { value: new Color(0x162035) }, // matches gradient mid
       uDepthColor:     { value: new Color(0x060c18) }, // matches gradient edge
       uSurfaceColor:   { value: new Color(0x2a3f5f) }, // matches gradient top
       uFoamColor:      { value: new Color(0x3a5a8a) }, // blue-toned foam
+      uRippleSpeed:    { value: 1.2 },   // how fast rings travel outward
+      uRippleStrength: { value: 0.15 },  // how much radial rings perturb the normal
     },
   ]),
 
@@ -139,6 +141,8 @@ const realisticWaterShader = {
     uniform vec3  uDepthColor;
     uniform vec3  uSurfaceColor;
     uniform vec3  uFoamColor;
+    uniform float uRippleSpeed;
+    uniform float uRippleStrength;
 
     varying vec4  mirrorCoord;
     varying vec4  worldPosition;
@@ -163,6 +167,22 @@ const realisticWaterShader = {
       vec2 uv1 = uv / 8.0  - vec2(time * 0.06, time * 0.09);
       return (texture2D(normalSampler, uv0) + texture2D(normalSampler, uv1)) * 0.5 - 1.0;
     }
+
+    /* ── Radial rings from bag base at world origin ── */
+    // Returns a vec2 normal offset in xz that pushes normals outward in rings
+    vec2 getRadialRipple(vec2 worldXZ) {
+      float dist  = length(worldXZ) + 0.001; // distance from bag base
+      vec2  dir   = worldXZ / dist;           // outward direction
+
+      // Three concentric ring frequencies, each decaying with distance
+      float decay = exp(-dist * 0.55);        // energy falls off from centre
+      float r1 = sin(dist * 3.8 - time * uRippleSpeed * 1.0) * decay;
+      float r2 = sin(dist * 7.2 - time * uRippleSpeed * 1.6) * decay * 0.5;
+      float r3 = sin(dist * 1.5 - time * uRippleSpeed * 0.6) * decay * 0.7;
+
+      return dir * (r1 + r2 + r3) * uRippleStrength;
+    }
+
 
     /* ── Specular from sun ── */
     void sunLight(
@@ -194,9 +214,12 @@ const realisticWaterShader = {
       vec4 noise      = getNoise(wPos);
       vec4 microNoise = getMicroNoise(wPos * 3.0);
       // Blend macro + micro normals
+      // Radial ripple normal offset from bag centre
+      vec2 rippleOffset = getRadialRipple(worldPosition.xz);
       vec3 surfNorm = normalize(
         (noise.xzy * vec3(1.5, 1.0, 1.5)) * 0.75 +
-        (microNoise.xzy * vec3(1.0, 1.0, 1.0)) * 0.25
+        (microNoise.xzy * vec3(1.0, 1.0, 1.0)) * 0.25 +
+        vec3(rippleOffset.x, 0.0, rippleOffset.y)
       );
 
       /* ── Lighting ── */
@@ -347,6 +370,8 @@ function WaterPlane() {
     // ── Advance time ──
     mat.uniforms['time'].value  += delta * 0.55;
     mat.uniforms['size'].value   = 2.5;
+    mat.uniforms['uRippleSpeed'].value    = 1.2;  // rings travel speed
+    mat.uniforms['uRippleStrength'].value = 0.55; // ring normal intensity
 
     // ── Update eye position ──
     mat.uniforms['eye'].value.setFromMatrixPosition(camera.matrixWorld);
@@ -565,7 +590,7 @@ function Lighting() {
       />
       <directionalLight position={[-3, 2, -2]} intensity={0.8} color="#b8d4ff" />
       <directionalLight position={[0, -1, -4]} intensity={0.5} color="#ffe8c0" />
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={1} />
     </>
   );
 }
@@ -607,7 +632,7 @@ export default function BagScene({
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 1.0,
+        toneMappingExposure: 0.8,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       style={{ background: 'transparent' }}
@@ -624,12 +649,10 @@ export default function BagScene({
       <CameraRig preset={activeCamera} flyTarget={flyTarget} controlsRef={controlsRef} />
       <OrbitControls
         ref={controlsRef}
-        enablePan={false} enableZoom={false} 
+        enablePan={false} enableZoom={false} enableRotate={false}
         enableDamping={false}
         minDistance={0.8} maxDistance={6}
-        minPolarAngle={Math.PI / 2}   // 30° — can't look straight down
-  maxPolarAngle={Math.PI / 0.8} // ~65° — can't go to the side
-  enableRotate={true} 
+        minPolarAngle={0} maxPolarAngle={Math.PI}
         makeDefault
       />
 
