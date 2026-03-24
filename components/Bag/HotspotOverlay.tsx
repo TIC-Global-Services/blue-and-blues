@@ -24,11 +24,12 @@ export default function HotspotOverlay({
         if (!pos?.visible) return null;
 
         const isActive = activeId === hs.id;
+        if (activeId && !isActive) return null;
 
         return (
           <button
             key={hs.id}
-            className={`${styles.hotspot} ${isActive ? styles.hotspotActive : ''}`}
+            className={`${styles.hotspot} ${isActive ? styles.hotspotActive : ''} uppercase`}
             style={{
               left: pos.x,
               top: pos.y,

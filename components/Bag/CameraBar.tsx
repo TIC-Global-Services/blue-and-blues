@@ -1,6 +1,5 @@
 'use client';
 
-import type { Dispatch, SetStateAction } from 'react';
 import type { CameraPreset } from './BagViewer';
 import styles from './BagViewer.module.css';
 
@@ -14,14 +13,14 @@ const PRESETS: { id: CameraPreset; label: string }[] = [
 
 interface CameraBarProps {
   activeCamera: CameraPreset;
-  onSelect: Dispatch<SetStateAction<CameraPreset>>;
+  onSelect: (preset: CameraPreset) => void;
 }
 
 export default function CameraBar({ activeCamera, onSelect }: CameraBarProps) {
   return (
     <nav
       className="
-        fixed bottom-8 left-1/2 -translate-x-1/2 z-[90]
+        fixed bottom-22 md:bottom-8 left-1/2 -translate-x-1/2 z-[90]
         backdrop-blur-md bg-white/5 border border-white/10
         flex items-center
       "

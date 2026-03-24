@@ -1,25 +1,26 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import BagViewer from '@/components/Bag';
-import LightRays from '@/components/Reusable/LightRays';
-import Particles from '@/components/Reusable/Particles';
-import IntroScreen from '@/components/IntroScreen';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import BagViewer from "@/components/Bag";
+import LightRays from "@/components/Reusable/LightRays";
+import Particles from "@/components/Reusable/Particles";
+import IntroScreen from "@/components/IntroScreen";
+import Link from "next/link";
+import { useAudio } from "@/hooks/useAudio";
 
-const INTRO_KEY = 'bb_intro_seen';
+const INTRO_KEY = "bb_intro_seen";
 
 const LIGHT_RAYS_PROPS = {
-  raysOrigin:     'top-center' as const,
-  raysColor:      '#ffffff',
-  raysSpeed:      0.5,
-  lightSpread:    1.5,
-  rayLength:      4,
-  followMouse:    true,
+  raysOrigin: "top-center" as const,
+  raysColor: "#ffffff",
+  raysSpeed: 0.5,
+  lightSpread: 1.5,
+  rayLength: 4,
+  followMouse: true,
   mouseInfluence: 0.1,
-  pulsating:      true,
-  fadeDistance:   2,
+  pulsating: true,
+  fadeDistance: 2,
 };
 
 /* ─── Shared easing ─── */
@@ -29,7 +30,7 @@ const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
 // The whole hero fades up from a very slight scale
 const heroVariants = {
-  hidden:  { opacity: 0, scale: 1.04 },
+  hidden: { opacity: 0, scale: 1.04 },
   visible: {
     opacity: 1,
     scale: 1,
@@ -39,18 +40,18 @@ const heroVariants = {
 
 // Headline: each word-group slides up + blur clears
 const headlineVariants = {
-  hidden:  { opacity: 0, y: 36, filter: 'blur(8px)' },
+  hidden: { opacity: 0, y: 36, filter: "blur(8px)" },
   visible: {
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.9, ease: EASE_OUT },
   },
 };
 
 // Thin horizontal rule that grows from left
 const ruleVariants = {
-  hidden:  { scaleX: 0, opacity: 0 },
+  hidden: { scaleX: 0, opacity: 0 },
   visible: {
     scaleX: 1,
     opacity: 0.25,
@@ -60,23 +61,23 @@ const ruleVariants = {
 
 // Bottom-right copy block
 const copyVariants = {
-  hidden:  {},
+  hidden: {},
   visible: { transition: { staggerChildren: 0.12, delayChildren: 0.65 } },
 };
 
 const copyChildVariants = {
-  hidden:  { opacity: 0, y: 18, filter: 'blur(4px)' },
+  hidden: { opacity: 0, y: 18, filter: "blur(4px)" },
   visible: {
     opacity: 1,
     y: 0,
-    filter: 'blur(0px)',
+    filter: "blur(0px)",
     transition: { duration: 0.65, ease: EASE_OUT },
   },
 };
 
 // Badge / pill at top of headline
 const badgeVariants = {
-  hidden:  { opacity: 0, y: -12 },
+  hidden: { opacity: 0, y: -12 },
   visible: {
     opacity: 0.4,
     y: 0,
@@ -89,6 +90,8 @@ const Hero = () => {
   // Controls when hero in-animation fires
   const [heroVisible, setHeroVisible] = useState(false);
 
+  const { playTap } = useAudio();
+
   useEffect(() => {
     const seen = sessionStorage.getItem(INTRO_KEY);
     setShowIntro(!seen);
@@ -97,8 +100,8 @@ const Hero = () => {
   }, []);
 
   const handleIntroDone = () => {
-    sessionStorage.setItem(INTRO_KEY, '1');
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    sessionStorage.setItem(INTRO_KEY, "1");
+    window.scrollTo({ top: 0, behavior: "instant" });
     setShowIntro(false);
     // Short delay so the white flash fully clears before hero animates in
     setTimeout(() => setHeroVisible(true), 80);
@@ -121,9 +124,9 @@ const Hero = () => {
         className="relative w-full h-screen overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
         variants={heroVariants}
         initial="hidden"
-        animate={heroVisible ? 'visible' : 'hidden'}
+        animate={heroVisible ? "visible" : "hidden"}
         // Keep invisible (not display:none) while intro plays so 3D scene loads
-        style={{ visibility: showIntro ? 'hidden' : 'visible' }}
+        style={{ visibility: showIntro ? "hidden" : "visible" }}
       >
         {/* Light rays */}
         <LightRays className="absolute inset-0 z-[1]" {...LIGHT_RAYS_PROPS} />
@@ -131,7 +134,7 @@ const Hero = () => {
         {/* Particles */}
         <div className="absolute inset-0 z-[2]">
           <Particles
-            particleColors={['#ffffff']}
+            particleColors={["#ffffff"]}
             particleCount={200}
             particleSpread={10}
             speed={0.1}
@@ -150,20 +153,16 @@ const Hero = () => {
 
         {/* ── Copy overlay ── */}
         <div className="absolute inset-0 pointer-events-none">
-
           {/* Top-left — headline */}
-          <div className="absolute top-[13%] left-[2%] text-white uppercase">
-
-           
-
+          <div className="absolute top-[18%] md:top-[13%] left-0 right-0 md:left-[2%] md:right-auto text-center md:text-left px-4 md:px-0 text-white uppercase">
             {/* Headline line 1 */}
             <motion.div
               variants={headlineVariants}
               initial="hidden"
-              animate={heroVisible ? 'visible' : 'hidden'}
+              animate={heroVisible ? "visible" : "hidden"}
               transition={{ delay: 0.18 }}
             >
-              <h1 className="text-4xl md:text-5xl font-extralight leading-[0.9] tracking-tight">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extralight leading-[0.9] tracking-tight">
                 timeless
               </h1>
             </motion.div>
@@ -172,10 +171,10 @@ const Hero = () => {
             <motion.div
               variants={headlineVariants}
               initial="hidden"
-              animate={heroVisible ? 'visible' : 'hidden'}
-              transition={{ delay: 0.30 }}
+              animate={heroVisible ? "visible" : "hidden"}
+              transition={{ delay: 0.3 }}
             >
-              <h1 className="text-5xl sm:text-6xl  font-medium leading-[0.9] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium leading-[0.9] tracking-tight">
                 design legacy
               </h1>
             </motion.div>
@@ -191,50 +190,32 @@ const Hero = () => {
 
           {/* Bottom-right — body copy + CTA */}
           <motion.div
-            className="absolute right-[2%] bottom-[8%] max-w-xs space-y-5 pointer-events-auto z-40"
+            className="absolute bottom-[16%] md:bottom-[4%] left-0 right-0 md:left-auto md:right-[2%] flex flex-col items-center md:items-end gap-4 md:gap-5 pointer-events-auto z-40 px-4 md:px-0"
             variants={copyVariants}
             initial="hidden"
-            animate={heroVisible ? 'visible' : 'hidden'}
+            animate={heroVisible ? "visible" : "hidden"}
           >
-
             {/* Body */}
             <motion.p
-              className="text-xs text-white/55 font-light leading-relaxed text-justify uppercase"
+              className=" text-[9px] md:text-xs text-white/55 font-light leading-relaxed text-center md:text-right uppercase max-w-xs"
               variants={copyChildVariants}
             >
-              A quiet luxury leather goods brand rooted in Italian design heritage
-              and crafted through Indian artistry. Where form follows meaning,
-              and every detail serves a reason.
+              A quiet luxury leather goods brand rooted in Italian design
+              heritage and crafted through Indian artistry. Where form follows
+              meaning, and every detail serves a reason.
             </motion.p>
 
             {/* CTA */}
             <motion.div variants={copyChildVariants}>
               <Link
                 href="#"
+                onClick={() => playTap()}
                 className="inline-block cursor-pointer px-7 py-2.5 border border-white/60 text-[10px] tracking-[3px] uppercase text-white/80 hover:bg-white hover:text-black transition-colors duration-300"
               >
                 Shop Now
               </Link>
             </motion.div>
           </motion.div>
-
-          {/* Bottom-left — scroll indicator (fades in last) */}
-          <motion.div
-            className="absolute bottom-8 left-[2.5%] flex items-center gap-3"
-            initial={{ opacity: 0 }}
-            animate={heroVisible ? { opacity: 0.3 } : { opacity: 0 }}
-            transition={{ duration: 0.6, delay: 1.1 }}
-          >
-            <div className="w-5 h-5 rounded-full border border-white/40 flex items-center justify-center">
-              <motion.span
-                className="w-[2px] h-[5px] rounded-full bg-white"
-                animate={{ y: [0, 4, 0], opacity: [0.8, 0.1, 0.8] }}
-                transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </div>
-            <p className="text-[8px] tracking-[3px] uppercase text-white">Explore</p>
-          </motion.div>
-
         </div>
       </motion.div>
     </>

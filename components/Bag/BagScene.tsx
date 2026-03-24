@@ -61,7 +61,7 @@ const CAMERA_PRESETS: Record<
   // top:   { position: new THREE.Vector3(0, 3.2, 0.5),  target: new THREE.Vector3(0, 0, 0) },
 };
 
-const WATER_Y = -0.7;
+const WATER_Y = -1;
 
 /* ─────────────────────────────────────────────
    Forked realistic water shader
@@ -510,6 +510,13 @@ function BagModel({ url }: { url: string }) {
     scene.scale.setScalar(scale);
     const center = box.getCenter(new THREE.Vector3()).multiplyScalar(scale);
     scene.position.sub(center);
+
+    // Log scaled bounds so hotspot positions can be calibrated
+    const scaledBox = new THREE.Box3().setFromObject(scene);
+    const min = scaledBox.min;
+    const max = scaledBox.max;
+    console.log('[BagModel] scaled bounds — min:', min, 'max:', max);
+    console.log('[BagModel] size X:', (max.x - min.x).toFixed(3), 'Y:', (max.y - min.y).toFixed(3), 'Z:', (max.z - min.z).toFixed(3));
   }, [scene]);
 
   return <primitive object={scene} />;
@@ -592,6 +599,21 @@ function HotspotTracker({
     });
     onPositionsUpdate(positions);
   });
+
+  return null;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive camera FOV
+───────────────────────────────────────────── */
+function ResponsiveCamera() {
+  const { camera, size } = useThree();
+
+  useEffect(() => {
+    if (!(camera instanceof PerspectiveCamera)) return;
+    camera.fov = size.width < 768 ? 72 : 50;
+    camera.updateProjectionMatrix();
+  }, [camera, size.width]);
 
   return null;
 }
@@ -715,6 +737,7 @@ export default function BagScene({
       }}
       style={{ background: "transparent" }}
     >
+      <ResponsiveCamera />
       <Environment preset="studio" backgroundBlurriness={1} />
       <Lighting />
 

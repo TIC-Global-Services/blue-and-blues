@@ -25,7 +25,7 @@ const Navbar = () => {
     <>
       {/* NAVBAR */}
       <div className="absolute top-0 z-50 text-white w-full uppercase backdrop-blur-xs ">
-        <div className="max-w-7xl mx-auto flex items-center justify-between py-6 px-6">
+        <div className=" mx-auto flex items-center justify-between py-6 px-10">
           {/* LEFT (desktop only) */}
           <div className="hidden md:flex items-center gap-6">
             {leftLinks.map((link, i) => (

@@ -25,14 +25,14 @@ export const HOTSPOTS: HotspotDef[] = [
     cameraPosition: [1.4, -0.4, 0.1],
     color: '#fff',
   },
-  {
+   {
     id: 'logo',
-    label: 'Brand Hardware',
+    label: 'Brand',
     description:
       'Solid brass logo plate, hand-polished and lacquered to resist tarnish. Engraved with serial number on the reverse.',
     position: [0.08, 0.05, 0.42],
-    cameraTarget: [0.02, 0.2, 0.4],
-    cameraPosition: [0.05, 0.5, 1.5],
+    cameraTarget: [0.08, 0.05, -0.42],
+    cameraPosition: [0.08, 0.05, 0.6],
     color: '#fff',
   },
   {

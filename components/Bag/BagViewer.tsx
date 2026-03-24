@@ -7,6 +7,8 @@ import { HOTSPOTS } from './Hotspots';
 import HotspotOverlay from './HotspotOverlay';
 import InfoPanel from './InfoPanel';
 import CameraBar from './CameraBar';
+import MusicButton from '../Reusable/MusicButton';
+import { useAudio } from '../../hooks/useAudio';
 import styles from './BagViewer.module.css';
 
 // Dynamically import the canvas to avoid SSR issues
@@ -27,7 +29,7 @@ export interface FXState {
 
 const DEFAULT_FX: FXState = {
   bloom: false,
-  bloomIntensity: 0.8,
+  bloomIntensity: 0.2,
   dof: false,
   dofFocusDistance: 0.02,
   dofBokehScale: 3,
@@ -50,17 +52,27 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
   >({});
   const [fx, setFx] = useState<FXState>(DEFAULT_FX);
   const [flyingTo, setFlyingTo] = useState<string | null>(null);
+  const { playing, toggle, playTap } = useAudio();
 
   const handleHotspotClick = useCallback((hotspot: HotspotDef) => {
+    playTap();
     setActiveHotspot({ hotspot, open: true });
     setFlyingTo(hotspot.id);
-  }, []);
+  }, [playTap]);
 
   const handleClosePanel = useCallback(() => {
+    playTap();
     setActiveHotspot(null);
     setFlyingTo(null);
     setActiveCamera('front');
-  }, []);
+  }, [playTap]);
+
+  const handleCameraSelect = useCallback((preset: CameraPreset) => {
+    playTap();
+    setActiveCamera(preset);
+    setActiveHotspot(null);
+    setFlyingTo(null);
+  }, [playTap]);
 
 
   return (
@@ -91,7 +103,10 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       <InfoPanel activeHotspot={activeHotspot} onClose={handleClosePanel} />
 
       {/* Camera preset bar */}
-      <CameraBar activeCamera={activeCamera} onSelect={setActiveCamera} />
+      <CameraBar activeCamera={activeCamera} onSelect={handleCameraSelect} />
+
+      {/* Music toggle */}
+      <MusicButton playing={playing} onToggle={() => { playTap(); toggle(); }} />
 
     </div>
   );

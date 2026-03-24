@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { ActiveHotspot } from './types';
 import styles from './BagViewer.module.css';
 
@@ -10,25 +12,36 @@ interface InfoPanelProps {
 
 export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
   const hs = activeHotspot?.hotspot;
+  const [mounted, setMounted] = useState(false);
 
-  return (
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
    <aside
    className={`
-    fixed top-0 right-0 h-full w-[350px] z-9999
-    backdrop-blur-lg bg-white/10 border-l border-y border-white/20
+    fixed z-9999
+    backdrop-blur-lg bg-white/10
     transition-transform duration-300
-    ${activeHotspot?.open ? 'translate-x-0' : 'translate-x-full'}
+
+    bottom-0 left-0 right-0 h-[30%] w-full border-t border-x border-white/20
+    md:top-0 md:bottom-auto md:left-auto md:right-0 md:h-full md:w-[350px] md:border-l md:border-y md:border-x-0
+
+    ${activeHotspot?.open
+      ? 'translate-y-0 md:translate-y-0 md:translate-x-0'
+      : 'translate-y-full md:translate-y-0 md:translate-x-full'}
   `}
   aria-live="polite"
   role="complementary"
 >
   {hs && (
-    <div className="relative h-full flex flex-col p-6 pt-[25%] text-white">
+    <div className="relative h-full flex flex-col p-6  text-white">
 
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="absolute top-[13%] cursor-pointer right-4 text-white/70 hover:text-white text-xl"
+        className="absolute top-4 cursor-pointer right-4 text-white/70 hover:text-white text-xl"
         aria-label="Close panel"
       >
         ✕
@@ -46,12 +59,12 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
       </div>
 
       {/* Title */}
-      <h2 className="text-2xl font-semibold mb-3">
+      <h2 className="text-2xl font-medium uppercase mb-3">
         {hs.label}
       </h2>
 
       {/* Description */}
-      <p className="text-sm text-white/80 leading-relaxed">
+      <p className="text-xs text-white/80 leading-relaxed uppercase text-justify">
         {hs.description}
       </p>
 
@@ -73,14 +86,15 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
         {/* Back Button */}
         <button
           onClick={onClose}
-          className="text-sm cursor-pointer text-white/70 hover:text-white transition"
+          className="text-sm cursor-pointer uppercase text-white/70 hover:text-white transition"
         >
-          ← Back to overview
+          ← Close
         </button>
 
       </div>
     </div>
   )}
-</aside>
+</aside>,
+  document.body
   );
 }
