@@ -92,12 +92,14 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       </Suspense>
 
       {/* Hotspot dots overlaid on canvas */}
-      <HotspotOverlay
-        hotspots={HOTSPOTS}
-        positions={hotspotPositions}
-        activeId={activeHotspot?.hotspot.id ?? null}
-        onHotspotClick={handleHotspotClick}
-      />
+      {activeCamera === 'front' && (
+        <HotspotOverlay
+          hotspots={HOTSPOTS}
+          positions={hotspotPositions}
+          activeId={activeHotspot?.hotspot.id ?? null}
+          onHotspotClick={handleHotspotClick}
+        />
+      )}
 
       {/* Slide-in info panel */}
       <InfoPanel activeHotspot={activeHotspot} onClose={handleClosePanel} />
