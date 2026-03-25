@@ -24,7 +24,7 @@ const Navbar = () => {
   return (
     <>
       {/* NAVBAR */}
-      <div className="absolute top-0 z-50 text-white w-full uppercase backdrop-blur-xs ">
+      <div className="absolute top-4 z-50 text-white w-full uppercase backdrop-blur-xs rounded-xl left-1/2 -translate-x-1/2">
         <div className=" mx-auto flex items-center justify-between py-6 px-10">
           {/* LEFT (desktop only) */}
           <div className="hidden md:flex items-center gap-6">

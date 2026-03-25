@@ -20,7 +20,7 @@ export default function CameraBar({ activeCamera, onSelect }: CameraBarProps) {
   return (
     <nav
       className="
-        fixed bottom-22 md:bottom-8 left-1/2 -translate-x-1/2 z-[90]
+        absolute bottom-22 md:bottom-8 left-1/2 -translate-x-1/2 z-[90]
         backdrop-blur-md bg-white/5 border border-white/10
         flex items-center
       "

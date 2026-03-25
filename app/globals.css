@@ -9,6 +9,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-clash-display: var(--font-clash-display);
+  --color-primary: #1A537B;
+  --color-secondary: #7EC9DA;
 }
 
 
