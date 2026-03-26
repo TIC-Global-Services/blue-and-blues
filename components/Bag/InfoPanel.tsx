@@ -20,8 +20,9 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
 
   return createPortal(
    <aside
+   onClick={(e) => e.stopPropagation()}
    className={`
-    fixed z-9999
+    fixed z-[100]
     backdrop-blur-lg bg-white/10
     transition-transform duration-300
 

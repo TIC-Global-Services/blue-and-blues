@@ -133,13 +133,27 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
         />
       </Suspense>
 
-      {/* Hotspot dots overlaid on canvas */}
-      {activeCamera === 'front' && (
-        <HotspotOverlay
-          hotspots={HOTSPOTS}
-          positions={hotspotPositions}
-          activeId={activeHotspot?.hotspot.id ?? null}
-          onHotspotClick={handleHotspotClick}
+      {/* Hotspot dots overlaid on canvas — fade out instead of hard unmount */}
+      {(activeCamera === 'front' || pendingInner) && (
+        <div
+          className="transition-opacity duration-400"
+          style={{ opacity: pendingInner ? 0 : 1, pointerEvents: pendingInner ? 'none' : 'auto' }}
+        >
+          <HotspotOverlay
+            hotspots={HOTSPOTS}
+            positions={hotspotPositions}
+            activeId={activeHotspot?.hotspot.id ?? null}
+            onHotspotClick={handleHotspotClick}
+          />
+        </div>
+      )}
+
+      {/* Click-outside overlay — below UI controls, above canvas */}
+      {activeHotspot?.open && (
+        <div
+          className="absolute inset-0 z-[50]"
+          onClick={handleClosePanel}
+          aria-hidden="true"
         />
       )}
 

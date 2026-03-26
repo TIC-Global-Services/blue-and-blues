@@ -45,7 +45,7 @@ const heroVariants: Variants = {
     scale: 1,
     filter: "brightness(1) blur(0px)",
     transition: {
-      duration: 1.2,
+      duration: 0.6,
       ease: [0.22, 1, 0.36, 1],
     },
   },

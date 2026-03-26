@@ -21,11 +21,12 @@ export default function CameraBar({ activeCamera, onSelect }: CameraBarProps) {
   return (
     <nav
       className="
-        absolute bottom-22 md:bottom-8 left-1/2 -translate-x-1/2 z-[90]
+        absolute bottom-22 md:bottom-8 left-1/2 -translate-x-1/2 z-[200]
         backdrop-blur-md bg-white/5 border border-white/10
         flex items-center
       "
       aria-label="Camera presets"
+      onClick={(e) => e.stopPropagation()}
     >
       {PRESETS.map(({ id, label }, index) => {
         const isActive = activeCamera === id;
@@ -37,7 +38,7 @@ export default function CameraBar({ activeCamera, onSelect }: CameraBarProps) {
             className={`
               relative px-5 py-2 text-xs uppercase tracking-[0.12em]
               transition-colors duration-200
-              border-r border-white/10
+              border-r border-white/10 cursor-pointer
               ${index === PRESETS.length - 1 ? 'border-r-0' : ''}
 
               ${isActive 
