@@ -8,6 +8,7 @@ const PRESETS: { id: CameraPreset; label: string }[] = [
   { id: 'front', label: 'Front' },
   { id: 'back',  label: 'Back'  },
   { id: 'side',  label: 'Side'  },
+  { id: 'inner', label: 'Inner View' },
   // { id: 'top',   label: 'Top'   },
 ];
 

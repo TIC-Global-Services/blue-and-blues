@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useState, useCallback } from 'react';
+import { Suspense, useState, useCallback, useEffect } from 'react';
 import type { HotspotDef, ActiveHotspot } from './types';
 import { HOTSPOTS } from './Hotspots';
 import HotspotOverlay from './HotspotOverlay';
@@ -14,7 +14,7 @@ import styles from './BagViewer.module.css';
 // Dynamically import the canvas to avoid SSR issues
 const BagScene = dynamic(() => import('./BagScene'), { ssr: false });
 
-export type CameraPreset = 'front' | 'back' | 'side';
+export type CameraPreset = 'front' | 'back' | 'side' | 'inner';
 
 export interface FXState {
   bloom: boolean;
@@ -52,7 +52,20 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
   >({});
   const [fx, setFx] = useState<FXState>(DEFAULT_FX);
   const [flyingTo, setFlyingTo] = useState<string | null>(null);
+  const [isClosingInner, setIsClosingInner] = useState(false);
+  const [pendingCamera, setPendingCamera] = useState<Exclude<CameraPreset, 'inner'> | null>(null);
+  const [pendingInner, setPendingInner] = useState(false);
   const { playing, toggle, playTap } = useAudio();
+
+  // After navigating to front to clear a hotspot, wait for camera to settle then open inner view
+  useEffect(() => {
+    if (!pendingInner) return;
+    const timer = setTimeout(() => {
+      setActiveCamera('inner');
+      setPendingInner(false);
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [pendingInner]);
 
   const handleHotspotClick = useCallback((hotspot: HotspotDef) => {
     playTap();
@@ -69,15 +82,42 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
   const handleCameraSelect = useCallback((preset: CameraPreset) => {
     playTap();
+
+    if (activeCamera === 'inner' && preset !== 'inner') {
+      // Play close animation, then smoothly move to target camera
+      setPendingCamera(preset as Exclude<CameraPreset, 'inner'>);
+      setIsClosingInner(true);
+      return;
+    }
+
+    if (preset === 'inner' && (activeCamera !== 'front' || flyingTo !== null || activeHotspot !== null)) {
+      // Always return to front first so Camera001 starts from the same position, then open inner view
+      setActiveHotspot(null);
+      setFlyingTo(null);
+      setActiveCamera('front');
+      setPendingInner(true);
+      return;
+    }
+
     setActiveCamera(preset);
     setActiveHotspot(null);
     setFlyingTo(null);
-  }, [playTap]);
+  }, [playTap, activeCamera, flyingTo, activeHotspot]);
+
+  const handleInnerCloseDone = useCallback(() => {
+    if (pendingCamera) {
+      setActiveCamera(pendingCamera);
+      setActiveHotspot(null);
+      setFlyingTo(null);
+    }
+    setPendingCamera(null);
+    setIsClosingInner(false);
+  }, [pendingCamera]);
 
 
   return (
     <div className={styles.root}>
-      
+
 
       {/* 3D Canvas — Suspense fallback is null because SceneLoader handles it */}
       <Suspense fallback={null}>
@@ -87,6 +127,8 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
           flyingTo={flyingTo}
           hotspots={HOTSPOTS}
           fx={fx}
+          isClosingInner={isClosingInner}
+          onInnerCloseDone={handleInnerCloseDone}
           onHotspotPositionsUpdate={setHotspotPositions}
         />
       </Suspense>
@@ -115,6 +157,6 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 }
 
 /* ─── Public export ─── */
-export default function BagViewer({ modelPath = '/bag.glb' }: BagViewerProps) {
+export default function BagViewer({ modelPath = '/model/bag_final.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }

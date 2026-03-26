@@ -7,6 +7,7 @@ import {
   OrbitControls,
   Environment,
   useTexture,
+  useAnimations,
 } from "@react-three/drei";
 import {
   EffectComposer,
@@ -43,7 +44,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
    Camera presets
 ───────────────────────────────────────────── */
 const CAMERA_PRESETS: Record<
-  CameraPreset,
+  Exclude<CameraPreset, 'inner'>,
   { position: THREE.Vector3; target: THREE.Vector3 }
 > = {
   front: {
@@ -530,7 +531,7 @@ function CameraRig({
   flyTarget,
   controlsRef,
 }: {
-  preset: CameraPreset;
+  preset: Exclude<CameraPreset, 'inner'>;
   flyTarget: { position: THREE.Vector3; target: THREE.Vector3 } | null;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }) {
@@ -691,9 +692,112 @@ function Lighting() {
 }
 
 /* ─────────────────────────────────────────────
+   Inner view — uses Camera001 from GLB + plays
+   all animations once, holds on last frame.
+   When isClosing=true, plays in reverse then
+   calls onCloseDone.
+───────────────────────────────────────────── */
+function InnerViewController({
+  modelUrl,
+  isClosing,
+  onCloseDone,
+}: {
+  modelUrl: string;
+  isClosing: boolean;
+  onCloseDone: () => void;
+}) {
+  const { cameras, animations, scene } = useGLTF(modelUrl);
+  const { set, camera: defaultCamera, size } = useThree();
+  const { actions, mixer } = useAnimations(animations, scene);
+  const hasPlayedRef = useRef(false);
+
+  // Swap in Camera001 from the GLB
+  useEffect(() => {
+    const glbCam = cameras.find(
+      (c) => c.name === "Camera001",
+    ) as THREE.PerspectiveCamera | undefined;
+    if (!glbCam) return;
+
+    glbCam.aspect = size.width / size.height;
+    glbCam.updateProjectionMatrix();
+    set({ camera: glbCam });
+
+    return () => {
+      // Sync default camera to Camera001's current world position/rotation so
+      // CameraRig can interpolate smoothly from here instead of blinking
+      glbCam.getWorldPosition(defaultCamera.position);
+      glbCam.getWorldQuaternion(defaultCamera.quaternion);
+      defaultCamera.updateMatrixWorld();
+      set({ camera: defaultCamera });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cameras, set]);
+
+  // Update aspect on resize
+  useEffect(() => {
+    const glbCam = cameras.find(
+      (c) => c.name === "Camera001",
+    ) as THREE.PerspectiveCamera | undefined;
+    if (!glbCam) return;
+    glbCam.aspect = size.width / size.height;
+    glbCam.updateProjectionMatrix();
+  }, [cameras, size]);
+
+  // Play all animations forward once, clamp at final frame
+  useEffect(() => {
+    if (hasPlayedRef.current) return;
+    const actionList = Object.values(actions).filter(Boolean);
+    if (actionList.length === 0) return;
+    hasPlayedRef.current = true;
+
+    actionList.forEach((action) => {
+      action!.setLoop(THREE.LoopOnce, 1);
+      action!.clampWhenFinished = true;
+      action!.reset().play();
+    });
+
+    return () => {
+      mixer.stopAllAction();
+      hasPlayedRef.current = false;
+    };
+  }, [actions, mixer]);
+
+  // Play in reverse when closing, call onCloseDone when done
+  useEffect(() => {
+    if (!isClosing) return;
+
+    const actionList = Object.values(actions).filter(Boolean);
+    if (actionList.length === 0) {
+      onCloseDone();
+      return;
+    }
+
+    let finishedCount = 0;
+    const handleFinished = () => {
+      finishedCount++;
+      if (finishedCount >= actionList.length) {
+        onCloseDone();
+      }
+    };
+    mixer.addEventListener("finished", handleFinished);
+
+    actionList.forEach((action) => {
+      action!.paused = false;
+      action!.timeScale = -1;
+    });
+
+    return () => {
+      mixer.removeEventListener("finished", handleFinished);
+    };
+  }, [isClosing, actions, mixer, onCloseDone]);
+
+  return null;
+}
+
+/* ─────────────────────────────────────────────
    Root export
 ───────────────────────────────────────────── */
-useGLTF.preload("/bag.glb");
+useGLTF.preload("/model/bag_final");
 
 export default function BagScene({
   modelUrl,
@@ -701,6 +805,8 @@ export default function BagScene({
   flyingTo,
   hotspots,
   fx,
+  isClosingInner,
+  onInnerCloseDone,
   onHotspotPositionsUpdate,
 }: {
   modelUrl: string;
@@ -708,6 +814,8 @@ export default function BagScene({
   flyingTo: string | null;
   hotspots: HotspotDef[];
   fx: FXState;
+  isClosingInner: boolean;
+  onInnerCloseDone: () => void;
   onHotspotPositionsUpdate: (
     positions: Record<string, { x: number; y: number; visible: boolean }>,
   ) => void;
@@ -747,23 +855,33 @@ export default function BagScene({
 
       <WaterPlane />
 
-      <CameraRig
-        preset={activeCamera}
-        flyTarget={flyTarget}
-        controlsRef={controlsRef}
-      />
-      <OrbitControls
-        ref={controlsRef}
-        enablePan={false}
-        enableZoom={false}
-        enableRotate={false}
-        enableDamping={false}
-        minDistance={0.8}
-        maxDistance={6}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI}
-        makeDefault
-      />
+      {activeCamera === 'inner' ? (
+        <InnerViewController
+          modelUrl={modelUrl}
+          isClosing={isClosingInner}
+          onCloseDone={onInnerCloseDone}
+        />
+      ) : (
+        <>
+          <CameraRig
+            preset={activeCamera as Exclude<CameraPreset, 'inner'>}
+            flyTarget={flyTarget}
+            controlsRef={controlsRef}
+          />
+          <OrbitControls
+            ref={controlsRef}
+            enablePan={false}
+            enableZoom={false}
+            enableRotate={false}
+            enableDamping={false}
+            minDistance={0.8}
+            maxDistance={6}
+            minPolarAngle={0}
+            maxPolarAngle={Math.PI}
+            makeDefault
+          />
+        </>
+      )}
 
       <HotspotTracker
         hotspots={hotspots}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import BagViewer from "@/components/Bag";
 import LightRays from "@/components/Reusable/LightRays";
 import Particles from "@/components/Reusable/Particles";
@@ -29,15 +29,22 @@ const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 /* ─── Per-element animation variants ─── */
 
 // The whole hero fades up from a very slight scale
-const heroVariants = {
-  hidden: { opacity: 0, scale: 1.04 },
+const heroVariants: Variants = {
+  hidden: {
+    opacity: 0,
+    scale: 1.08,
+    filter: "brightness(1.6) blur(12px)",
+  },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.85, ease: EASE_OUT },
+    filter: "brightness(1) blur(0px)",
+    transition: {
+      duration: 1.2,
+      ease: [0.22, 1, 0.36, 1],
+    },
   },
 };
-
 // Headline: each word-group slides up + blur clears
 const headlineVariants = {
   hidden: { opacity: 0, y: 36, filter: "blur(8px)" },
@@ -89,6 +96,7 @@ const Hero = () => {
   const [showIntro, setShowIntro] = useState<boolean | null>(null);
   // Controls when hero in-animation fires
   const [heroVisible, setHeroVisible] = useState(false);
+  const [lockScroll, setLockScroll] = useState(true);
 
   const { playTap } = useAudio();
 
@@ -101,13 +109,41 @@ const Hero = () => {
 
   const handleIntroDone = () => {
     sessionStorage.setItem(INTRO_KEY, "1");
+
     window.scrollTo({ top: 0, behavior: "instant" });
+
+    // Keep scroll locked
+    setLockScroll(true);
+
+    // Remove intro overlay
     setShowIntro(false);
-    // Short delay so the white flash fully clears before hero animates in
-    setTimeout(() => setHeroVisible(true), 80);
+
+    // Show hero (from light)
+    setTimeout(() => {
+      setHeroVisible(true);
+    }, 600);
+
+    // 🔥 Unlock scroll AFTER hero settles
+    setTimeout(() => {
+      setLockScroll(false);
+    }, 1800); // tweak 1500–2000 for feel
   };
 
-  if (showIntro === null) return null;
+  useEffect(() => {
+    if (lockScroll) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [lockScroll]);
+
+  if (showIntro === null) {
+    return (
+      <div className="w-full h-screen bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]">
+        <LightRays className="absolute inset-0 z-[1]" {...LIGHT_RAYS_PROPS} />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -148,7 +184,7 @@ const Hero = () => {
 
         {/* 3D bag */}
         <main className="absolute inset-0 z-40 overflow-hidden w-full h-screen">
-          <BagViewer modelPath="/bag.glb" />
+          <BagViewer modelPath="/model/bag_final.glb" />
         </main>
 
         {/* ── Copy overlay ── */}
