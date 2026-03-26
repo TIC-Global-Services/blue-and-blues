@@ -5,6 +5,7 @@ import ShopEssentials from "@/components/ShopEssentials";
 import TextRevealSection from "@/components/TextRevealSection";
 import { AudioProvider } from "@/hooks/AudioContext";
 import InTheSpotlight from "@/components/Spotlight";
+import Instagram from "@/components/Instagram";
 
 export default function Home() {
   return (
@@ -15,6 +16,7 @@ export default function Home() {
       <TextRevealSection />
       <BestSellingDesigns />
       <InTheSpotlight />
+      <Instagram />
     </AudioProvider>
   );
 }
