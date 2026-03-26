@@ -24,11 +24,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     soundtrackRef.current = soundtrack;
 
     const tap = new Audio('/music/tap.wav');
-    tap.volume = 0.5;
+    tap.volume = 0.2;
     tapRef.current = tap;
 
     const hover = new Audio('/music/hover.mp3');
-    hover.volume = 0.3;
+    hover.volume = 0.15;
     hoverRef.current = hover;
 
     return () => {
