@@ -6,6 +6,7 @@ interface AudioContextValue {
   playing: boolean;
   toggle: () => void;
   playTap: () => void;
+  playHover: () => void;
 }
 
 const AudioCtx = createContext<AudioContextValue | null>(null);
@@ -14,6 +15,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [playing, setPlaying] = useState(false);
   const soundtrackRef = useRef<HTMLAudioElement | null>(null);
   const tapRef = useRef<HTMLAudioElement | null>(null);
+  const hoverRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const soundtrack = new Audio('/music/soundtrack.mp3');
@@ -25,10 +27,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     tap.volume = 0.5;
     tapRef.current = tap;
 
+    const hover = new Audio('/music/hover.mp3');
+    hover.volume = 0.3;
+    hoverRef.current = hover;
+
     return () => {
       soundtrack.pause();
       soundtrack.src = '';
       tap.src = '';
+      hover.src = '';
     };
   }, []);
 
@@ -51,8 +58,16 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     tap.play().catch(() => {});
   }, [playing]);
 
+  const playHover = useCallback(() => {
+    if (!playing) return;
+    const hover = hoverRef.current;
+    if (!hover) return;
+    hover.currentTime = 0;
+    hover.play().catch(() => {});
+  }, [playing]);
+
   return (
-    <AudioCtx.Provider value={{ playing, toggle, playTap }}>
+    <AudioCtx.Provider value={{ playing, toggle, playTap, playHover }}>
       {children}
     </AudioCtx.Provider>
   );

@@ -1,15 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+function useIsOverLightBg() {
+  const [isLight, setIsLight] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      const buttonY = window.innerHeight - 32 - 16;
+      const sections = document.querySelectorAll('[data-light-bg]');
+      let light = false;
+      sections.forEach(section => {
+        const rect = section.getBoundingClientRect();
+        if (rect.top <= buttonY && rect.bottom >= buttonY) light = true;
+      });
+      setIsLight(light);
+    };
+
+    window.addEventListener('scroll', check, { passive: true });
+    check();
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+
+  return isLight;
+}
+
 interface MusicButtonProps {
   playing: boolean;
   onToggle: () => void;
 }
 
 export default function MusicButton({ playing, onToggle }: MusicButtonProps) {
+  const isLight = useIsOverLightBg();
+
   return (
     <button
       onClick={onToggle}
-      className="fixed bottom-8 left-10 z-[90] flex items-center gap-2.5 text-white/60 hover:text-white transition-colors duration-200 cursor-pointer"
+      className={`fixed bottom-8 left-10 z-[90] flex items-center gap-2.5 transition-colors duration-300 cursor-pointer ${isLight ? 'text-black/70 hover:text-black' : 'text-white/60 hover:text-white'}`}
       aria-label={playing ? 'Mute soundtrack' : 'Play soundtrack'}
     >
       {/* Animated sound bars */}

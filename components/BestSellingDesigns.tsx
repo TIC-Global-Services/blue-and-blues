@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import BestSellingCard from "./Product/BestSellingCard";
+import { useAudio } from "@/hooks/AudioContext";
 
 const bestProducts = [
   {
@@ -57,6 +58,7 @@ const bestProducts = [
 const BestSellingDesigns = () => {
   const [active, setActive] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  const { playHover } = useAudio();
 
   const scrollToIndex = (idx: number) => {
     if (!trackRef.current) return;
@@ -88,7 +90,7 @@ const BestSellingDesigns = () => {
   };
 
   return (
-    <section className="py-16 px-6">
+    <section data-light-bg className="py-16 px-6">
       <h2 className="font-medium text-primary text-4xl md:text-5xl uppercase mb-10 text-center">
         Handpicked Best Selling Designs
       </h2>
@@ -100,7 +102,11 @@ const BestSellingDesigns = () => {
         className="flex gap-6 overflow-x-scroll snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden  overflow-y-hidden pt-10"
       >
         {bestProducts.map((product, idx) => (
-          <div key={idx} className="shrink-0 w-[60%] sm:w-[38%] lg:w-[22%] h-auto snap-start">
+          <div
+            key={idx}
+            onMouseEnter={playHover}
+            className="shrink-0 w-[60%] sm:w-[38%] lg:w-[22%] h-auto snap-start"
+          >
             <BestSellingCard
               title={product.title}
               imgUrl={product.imgUrl}

@@ -1,6 +1,7 @@
 "use client"
 import { useState, useRef } from 'react'
 import EssentialCard from './Product/EssentialCard'
+import { useAudio } from '@/hooks/AudioContext'
 
 const products = [
   {
@@ -38,6 +39,7 @@ const products = [
 const ShopEssentials = () => {
   const [active, setActive] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
+  const {playHover, playTap} = useAudio();
 
   const scrollToIndex = (idx: number) => {
     if (!trackRef.current) return
@@ -68,7 +70,7 @@ const ShopEssentials = () => {
   }
 
   return (
-    <section className="py-16 px-6">
+    <section data-light-bg className="py-16 px-6">
       {/* Header */}
       <div className="flex justify-between items-end mb-10">
         <h2 className="font-medium text-primary text-4xl md:text-5xl uppercase leading-tight">
@@ -76,7 +78,7 @@ const ShopEssentials = () => {
         </h2>
         <div className="flex gap-3">
           <button
-            onClick={() => scrollToIndex(Math.max(0, active - 1))}
+            onClick={() => { scrollToIndex(Math.max(0, active - 1)); playTap(); }}
             disabled={active === 0}
             aria-label="Previous"
             className="w-10 h-10 rounded-full border border-primary/40 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-200 disabled:opacity-25 disabled:pointer-events-none"
@@ -86,7 +88,7 @@ const ShopEssentials = () => {
             </svg>
           </button>
           <button
-            onClick={() => scrollToIndex(Math.min(products.length - 1, active + 1))}
+            onClick={() => { scrollToIndex(Math.min(products.length - 1, active + 1)); playTap(); }}
             disabled={active === products.length - 1}
             aria-label="Next"
             className="w-10 h-10 rounded-full border border-primary/40 text-primary flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-200 disabled:opacity-25 disabled:pointer-events-none"
@@ -107,6 +109,7 @@ const ShopEssentials = () => {
         {products.map((product, idx) => (
           <div
             key={idx}
+            onMouseEnter={playHover}
             className="shrink-0 w-[78%] sm:w-[44%] lg:w-[30%] snap-start"
           >
             <EssentialCard

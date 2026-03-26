@@ -131,7 +131,7 @@ const BornBetweenIntension = () => {
     }, [])
 
     return (
-        <section ref={sectionRef} className="h-[300vh] p-5">
+        <section ref={sectionRef} data-light-bg className="h-[300vh] p-5">
             <div className="sticky top-0 h-screen overflow-hidden bg-white">
 
                 {/* ── Left Panel (desktop only) ───────────────── */}

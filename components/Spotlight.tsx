@@ -92,7 +92,7 @@ const Label = ({
 /* ── Main section ───────────────────────────────────────── */
 const InTheSpotlight = () => {
   return (
-    <section className="relative w-full py-16 md:py-24 px-5 sm:px-8 md:px-12 lg:px-20 bg-white">
+    <section data-light-bg className="relative w-full py-16 md:py-24 px-5 sm:px-8 md:px-12 lg:px-20 bg-white">
       {/*
         Layout:
         Mobile  (< md): 2 columns
