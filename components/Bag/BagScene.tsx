@@ -37,7 +37,7 @@ import {
 } from "three";
 import { easing } from "maath";
 import type { HotspotDef } from "./types";
-import type { FXState, CameraPreset } from "./BagViewer";
+import type { FXState, CameraPreset, LightingState } from "./BagViewer";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 /* ─────────────────────────────────────────────
@@ -482,7 +482,7 @@ function WaterPlane() {
 /* ─────────────────────────────────────────────
    Bag mesh
 ───────────────────────────────────────────── */
-function BagModel({ url }: { url: string }) {
+function BagModel({ url, envMapIntensity }: { url: string; envMapIntensity: number }) {
   const { scene } = useGLTF(url);
 
   useEffect(() => {
@@ -491,17 +491,6 @@ function BagModel({ url }: { url: string }) {
         const mesh = child as THREE.Mesh;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
-        if (mesh.material) {
-          const mats = Array.isArray(mesh.material)
-            ? mesh.material
-            : [mesh.material];
-          mats.forEach((mat) => {
-            if (mat instanceof THREE.MeshStandardMaterial) {
-              mat.envMapIntensity = 1.2;
-              mat.needsUpdate = true;
-            }
-          });
-        }
       }
     });
 
@@ -512,13 +501,30 @@ function BagModel({ url }: { url: string }) {
     const center = box.getCenter(new THREE.Vector3()).multiplyScalar(scale);
     scene.position.sub(center);
 
-    // Log scaled bounds so hotspot positions can be calibrated
     const scaledBox = new THREE.Box3().setFromObject(scene);
     const min = scaledBox.min;
     const max = scaledBox.max;
     console.log('[BagModel] scaled bounds — min:', min, 'max:', max);
     console.log('[BagModel] size X:', (max.x - min.x).toFixed(3), 'Y:', (max.y - min.y).toFixed(3), 'Z:', (max.z - min.z).toFixed(3));
   }, [scene]);
+
+  // Update envMapIntensity dynamically
+  useEffect(() => {
+    scene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          mats.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.envMapIntensity = envMapIntensity;
+              mat.needsUpdate = true;
+            }
+          });
+        }
+      }
+    });
+  }, [scene, envMapIntensity]);
 
   return <primitive object={scene} />;
 }
@@ -660,12 +666,20 @@ function PostFX({ fx }: { fx: FXState }) {
 /* ─────────────────────────────────────────────
    Lighting
 ───────────────────────────────────────────── */
-function Lighting() {
+function RendererConfig({ exposure }: { exposure: number }) {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.toneMappingExposure = exposure;
+  }, [gl, exposure]);
+  return null;
+}
+
+function Lighting({ ls }: { ls: LightingState }) {
   return (
     <>
       <directionalLight
         position={[3, 5, 3]}
-        intensity={1}
+        intensity={ls.keyIntensity}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.1}
@@ -678,15 +692,15 @@ function Lighting() {
       />
       <directionalLight
         position={[-3, 2, -2]}
-        intensity={0.8}
+        intensity={ls.fillIntensity}
         color="#b8d4ff"
       />
       <directionalLight
         position={[0, -1, -4]}
-        intensity={0.5}
+        intensity={ls.rimIntensity}
         color="#ffe8c0"
       />
-      <ambientLight intensity={1} />
+      <ambientLight intensity={ls.ambientIntensity} />
     </>
   );
 }
@@ -805,6 +819,7 @@ export default function BagScene({
   flyingTo,
   hotspots,
   fx,
+  lightingState,
   isClosingInner,
   onInnerCloseDone,
   onHotspotPositionsUpdate,
@@ -814,6 +829,7 @@ export default function BagScene({
   flyingTo: string | null;
   hotspots: HotspotDef[];
   fx: FXState;
+  lightingState: LightingState;
   isClosingInner: boolean;
   onInnerCloseDone: () => void;
   onHotspotPositionsUpdate: (
@@ -840,17 +856,18 @@ export default function BagScene({
       gl={{
         antialias: true,
         toneMapping: THREE.ACESFilmicToneMapping,
-        toneMappingExposure: 0.8,
+        toneMappingExposure: lightingState.toneMappingExposure,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
       style={{ background: "transparent" }}
     >
+      <RendererConfig exposure={lightingState.toneMappingExposure} />
       <ResponsiveCamera />
-      <Environment preset="studio" backgroundBlurriness={1} />
-      <Lighting />
+      <Environment preset={lightingState.envPreset as any} backgroundBlurriness={1} />
+      <Lighting ls={lightingState} />
 
       <Suspense fallback={null}>
-        <BagModel url={modelUrl} />
+        <BagModel url={modelUrl} envMapIntensity={lightingState.envMapIntensity} />
       </Suspense>
 
       <WaterPlane />

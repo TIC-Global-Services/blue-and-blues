@@ -26,6 +26,26 @@ export interface FXState {
   saturation: number;
 }
 
+export interface LightingState {
+  keyIntensity: number;
+  fillIntensity: number;
+  rimIntensity: number;
+  ambientIntensity: number;
+  toneMappingExposure: number;
+  envMapIntensity: number;
+  envPreset: string;
+}
+
+const DEFAULT_LIGHTING: LightingState = {
+  keyIntensity: 1,
+  fillIntensity: 0.8,
+  rimIntensity: 0.5,
+  ambientIntensity: 1,
+  toneMappingExposure: 0.8,
+  envMapIntensity: 1.2,
+  envPreset: 'studio',
+};
+
 const DEFAULT_FX: FXState = {
   bloom: false,
   bloomIntensity: 0.2,
@@ -45,6 +65,8 @@ interface BagViewerProps {
 function BagViewerInner({ modelPath }: { modelPath: string }) {
 
   const [activeCamera, setActiveCamera] = useState<CameraPreset>('front');
+  const [lighting, setLighting] = useState<LightingState>(DEFAULT_LIGHTING);
+  const [debugOpen, setDebugOpen] = useState(false);
   const [activeHotspot, setActiveHotspot] = useState<ActiveHotspot | null>(null);
   const [hotspotPositions, setHotspotPositions] = useState<
     Record<string, { x: number; y: number; visible: boolean }>
@@ -126,6 +148,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
           flyingTo={flyingTo}
           hotspots={HOTSPOTS}
           fx={fx}
+          lightingState={lighting}
           isClosingInner={isClosingInner}
           onInnerCloseDone={handleInnerCloseDone}
           onHotspotPositionsUpdate={setHotspotPositions}
@@ -161,6 +184,69 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
       {/* Camera preset bar */}
       <CameraBar activeCamera={activeCamera} onSelect={handleCameraSelect} />
+
+      {/* ── Lighting debug panel ── */}
+      <div className="fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
+        <button
+          onClick={() => setDebugOpen((v) => !v)}
+          className="bg-black/70 text-white/80 text-[10px] tracking-widest uppercase px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors"
+        >
+          {debugOpen ? 'Close' : '⚙ Lighting'}
+        </button>
+
+        {debugOpen && (
+          <div className="mt-1 bg-black/80 backdrop-blur border border-white/15 p-4 w-64 text-white/80 text-[11px] flex flex-col gap-3">
+            {(
+              [
+                { key: 'keyIntensity', label: 'Key Light', min: 0, max: 5, step: 0.05 },
+                { key: 'fillIntensity', label: 'Fill Light', min: 0, max: 5, step: 0.05 },
+                { key: 'rimIntensity', label: 'Rim Light', min: 0, max: 5, step: 0.05 },
+                { key: 'ambientIntensity', label: 'Ambient', min: 0, max: 5, step: 0.05 },
+                { key: 'toneMappingExposure', label: 'Exposure', min: 0, max: 3, step: 0.05 },
+                { key: 'envMapIntensity', label: 'Env Map', min: 0, max: 5, step: 0.1 },
+              ] as const
+            ).map(({ key, label, min, max, step }) => (
+              <div key={key}>
+                <div className="flex justify-between mb-0.5">
+                  <span>{label}</span>
+                  <span className="font-mono">{(lighting[key] as number).toFixed(2)}</span>
+                </div>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={step}
+                  value={lighting[key] as number}
+                  onChange={(e) =>
+                    setLighting((prev) => ({ ...prev, [key]: parseFloat(e.target.value) }))
+                  }
+                  className="w-full accent-white/60 h-1"
+                />
+              </div>
+            ))}
+
+            <div>
+              <div className="mb-0.5">Environment</div>
+              <select
+                value={lighting.envPreset}
+                onChange={(e) => setLighting((prev) => ({ ...prev, envPreset: e.target.value }))}
+                className="w-full bg-black/50 border border-white/20 text-white/80 px-2 py-1 text-[11px]"
+              >
+                {['studio', 'city', 'dawn', 'night', 'forest', 'apartment', 'lobby', 'park', 'sunset', 'warehouse'].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setLighting(DEFAULT_LIGHTING)}
+              className="mt-1 w-full text-[10px] tracking-widest uppercase border border-white/20 py-1 hover:bg-white/10 transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+        )}
+      </div>
 
     </div>
   );
