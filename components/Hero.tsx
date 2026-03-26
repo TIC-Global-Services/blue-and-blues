@@ -7,6 +7,7 @@ import LightRays from "@/components/Reusable/LightRays";
 import Particles from "@/components/Reusable/Particles";
 import IntroScreen from "@/components/IntroScreen";
 import PageLoader from "@/components/PageLoader";
+import MusicButton from "@/components/Reusable/MusicButton";
 import Link from "next/link";
 import { useAudio } from "@/hooks/useAudio";
 import { useGLTF } from "@react-three/drei";
@@ -104,7 +105,7 @@ const Hero = () => {
   const [heroVisible, setHeroVisible] = useState(false);
   const [lockScroll, setLockScroll] = useState(true);
 
-  const { playTap } = useAudio();
+  const { playing, toggle, playTap } = useAudio();
 
   const handleModelLoaded = () => {
     setModelLoaded(true);
@@ -255,6 +256,11 @@ const Hero = () => {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* Music button — outside motion.div so CSS transform doesn't trap fixed position */}
+      {modelLoaded && (
+        <MusicButton playing={playing} onToggle={() => { playTap(); toggle(); }} />
+      )}
     </>
   );
 };

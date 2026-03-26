@@ -17,6 +17,7 @@ export default function IntroScreen({
 }: IntroScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const autoPlayRef = useRef(false);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -31,7 +32,7 @@ export default function IntroScreen({
         opacity: 0,
         scale: 0.85,
         filter: 'blur(20px)',
-        duration: 0.8,
+        duration: 0.4,
       });
 
       /* ─── SCENE 1 ─── */
@@ -72,30 +73,48 @@ export default function IntroScreen({
         }
       );
 
+      /* ─── SCENE 2 OUT → triggers auto-play of the ending ─── */
       tl.to('.scene2', {
         opacity: 0,
         filter: 'blur(20px)',
         duration: 0.7,
+        onComplete: () => {
+          if (autoPlayRef.current) return;
+          autoPlayRef.current = true;
+          // Auto-drive the rest of the timeline to completion
+          gsap.to(timelineRef.current!, {
+            progress: 1,
+            duration: 3,
+            ease: 'power2.inOut',
+          });
+        },
       });
 
-      /* ─── LIGHT EXPLOSION ─── */
-      tl.to('.light-expand', {
-        scale: 2.8,
-        opacity: 1,
-        duration: 1.2,
-        ease: 'power2.out',
-      });
+      /* ─── LIGHT RAYS BLAST TO FULL SCREEN ─── */
+      tl.fromTo(
+        '.light-expand',
+        { scale: 1, opacity: 0.6, filter: 'brightness(1)' },
+        {
+          scale: 22,
+          opacity: 1,
+          filter: 'brightness(8)',
+          duration: 2.4,
+          ease: 'power3.in',
+        }
+      );
 
-      /* ─── FLASH IN ─── */
+      /* ─── WHITE FLASH IN — rides in on the brightness peak ─── */
       tl.to('.white-flash', {
         opacity: 1,
-        duration: 0.3,
-      });
+        duration: 0.35,
+        ease: 'power2.in',
+      }, '-=0.5');
 
-      /* ─── FLASH OUT → HERO ─── */
+      /* ─── WHITE BLOOM OUT → HERO ─── */
       tl.to('.white-flash', {
         opacity: 0,
-        duration: 0.9,
+        duration: 1.1,
+        ease: 'power1.out',
         onComplete: onDone,
       });
     }, containerRef);
@@ -104,20 +123,21 @@ export default function IntroScreen({
     document.body.style.overflow = 'hidden';
 
     /* 🔥 SMOOTH SCROLL CONTROL */
-    const SCROLL_POWER = 0.0015;
+    const SCROLL_POWER = 0.003;
 
     const handleScroll = (e: WheelEvent) => {
-      if (!timelineRef.current) return;
+      // Once auto-play has kicked in, ignore scroll input
+      if (!timelineRef.current || autoPlayRef.current) return;
 
       const delta = e.deltaY * SCROLL_POWER;
-
       let next = timelineRef.current.progress() + delta;
       next = Math.max(0, Math.min(1, next));
 
       gsap.to(timelineRef.current, {
         progress: next,
-        duration: 0.6,
+        duration: 0.35,
         ease: 'power2.out',
+        overwrite: true, // kill any in-flight tween so they don't pile up
       });
     };
 
@@ -135,12 +155,15 @@ export default function IntroScreen({
       className="fixed inset-0 z-[9999] overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
     >
       {/* LIGHT RAYS */}
-      <div className="light-expand absolute inset-0 opacity-60 scale-100">
+      <div className="light-expand absolute inset-0 opacity-60">
         <LightRaysComponent
           {...lightRaysProps}
-          raysSpeed={0.8}
-          lightSpread={2}
-          pulsating
+          raysSpeed={0.6}
+          lightSpread={6}
+          rayLength={10}
+          fadeDistance={8}
+          followMouse={false}
+          pulsating={false}
         />
       </div>
 
@@ -208,7 +231,7 @@ export default function IntroScreen({
         ))}
       </div>
 
-      {/* WHITE FLASH */}
+      {/* WHITE BLOOM */}
       <div className="white-flash absolute inset-0 bg-white opacity-0" />
     </div>
   );

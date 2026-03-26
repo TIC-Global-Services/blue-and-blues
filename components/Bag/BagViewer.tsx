@@ -7,7 +7,6 @@ import { HOTSPOTS } from './Hotspots';
 import HotspotOverlay from './HotspotOverlay';
 import InfoPanel from './InfoPanel';
 import CameraBar from './CameraBar';
-import MusicButton from '../Reusable/MusicButton';
 import { useAudio } from '../../hooks/useAudio';
 import styles from './BagViewer.module.css';
 
@@ -55,7 +54,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
   const [isClosingInner, setIsClosingInner] = useState(false);
   const [pendingCamera, setPendingCamera] = useState<Exclude<CameraPreset, 'inner'> | null>(null);
   const [pendingInner, setPendingInner] = useState(false);
-  const { playing, toggle, playTap } = useAudio();
+  const { playTap } = useAudio();
 
   // After navigating to front to clear a hotspot, wait for camera to settle then open inner view
   useEffect(() => {
@@ -162,9 +161,6 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
       {/* Camera preset bar */}
       <CameraBar activeCamera={activeCamera} onSelect={handleCameraSelect} />
-
-      {/* Music toggle */}
-      <MusicButton playing={playing} onToggle={() => { playTap(); toggle(); }} />
 
     </div>
   );
