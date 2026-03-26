@@ -6,8 +6,13 @@ import BagViewer from "@/components/Bag";
 import LightRays from "@/components/Reusable/LightRays";
 import Particles from "@/components/Reusable/Particles";
 import IntroScreen from "@/components/IntroScreen";
+import PageLoader from "@/components/PageLoader";
 import Link from "next/link";
 import { useAudio } from "@/hooks/useAudio";
+import { useGLTF } from "@react-three/drei";
+
+// Kick off model download immediately — before the Canvas even mounts
+useGLTF.preload("/model/bag_final.glb");
 
 const INTRO_KEY = "bb_intro_seen";
 
@@ -93,6 +98,7 @@ const badgeVariants = {
 };
 
 const Hero = () => {
+  const [modelLoaded, setModelLoaded] = useState(false);
   const [showIntro, setShowIntro] = useState<boolean | null>(null);
   // Controls when hero in-animation fires
   const [heroVisible, setHeroVisible] = useState(false);
@@ -100,12 +106,12 @@ const Hero = () => {
 
   const { playTap } = useAudio();
 
-  useEffect(() => {
+  const handleModelLoaded = () => {
+    setModelLoaded(true);
     const seen = sessionStorage.getItem(INTRO_KEY);
     setShowIntro(!seen);
-    // If no intro, animate hero immediately
     if (seen) setHeroVisible(true);
-  }, []);
+  };
 
   const handleIntroDone = () => {
     sessionStorage.setItem(INTRO_KEY, "1");
@@ -137,16 +143,11 @@ const Hero = () => {
     }
   }, [lockScroll]);
 
-  if (showIntro === null) {
-    return (
-      <div className="w-full h-screen bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]">
-        <LightRays className="absolute inset-0 z-[1]" {...LIGHT_RAYS_PROPS} />
-      </div>
-    );
-  }
-
   return (
     <>
+      {/* Full-page loader — visible until GLB is fully downloaded */}
+      {!modelLoaded && <PageLoader onLoaded={handleModelLoaded} />}
+
       {showIntro && (
         <IntroScreen
           onDone={handleIntroDone}
