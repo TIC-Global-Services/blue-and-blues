@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, Suspense } from "react";
+import { useRef, useEffect, useState, Suspense } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import {
   useGLTF,
@@ -715,15 +715,25 @@ function InnerViewController({
   modelUrl,
   isClosing,
   onCloseDone,
+  onOrbitReady,
 }: {
   modelUrl: string;
   isClosing: boolean;
   onCloseDone: () => void;
+  onOrbitReady?: () => void;
 }) {
   const { cameras, animations, scene } = useGLTF(modelUrl);
   const { set, camera: defaultCamera, size } = useThree();
   const { actions, mixer } = useAnimations(animations, scene);
   const hasPlayedRef = useRef(false);
+
+  const glbCamRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const [orbitReady, setOrbitReady] = useState(false);
+  const orbitReadyRef = useRef(false);
+  // true when we close while orbit is active — defaultCamera is already at
+  // the correct position, so cleanup must NOT overwrite it with Camera001's pose
+  const closedFromOrbitRef = useRef(false);
+  const orbitTargetRef = useRef(new THREE.Vector3(0, 0, 0));
 
   // Swap in Camera001 from the GLB
   useEffect(() => {
@@ -732,17 +742,26 @@ function InnerViewController({
     ) as THREE.PerspectiveCamera | undefined;
     if (!glbCam) return;
 
+    glbCamRef.current = glbCam;
     glbCam.aspect = size.width / size.height;
     glbCam.updateProjectionMatrix();
     set({ camera: glbCam });
 
     return () => {
-      // Sync default camera to Camera001's current world position/rotation so
-      // CameraRig can interpolate smoothly from here instead of blinking
-      glbCam.getWorldPosition(defaultCamera.position);
-      glbCam.getWorldQuaternion(defaultCamera.quaternion);
-      defaultCamera.updateMatrixWorld();
+      if (!orbitReadyRef.current && !closedFromOrbitRef.current) {
+        // Camera001 was the active camera — sync its current world pose to
+        // defaultCamera so CameraRig can smoothly interpolate from here
+        glbCam.getWorldPosition(defaultCamera.position);
+        glbCam.getWorldQuaternion(defaultCamera.quaternion);
+        defaultCamera.updateMatrixWorld();
+      }
+      // Otherwise defaultCamera is already at the correct position:
+      //  - orbitReady: we switched to it when orbit started
+      //  - closedFromOrbit: it was at the user's orbit position
       set({ camera: defaultCamera });
+      orbitReadyRef.current = false;
+      closedFromOrbitRef.current = false;
+      glbCamRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameras, set]);
@@ -770,8 +789,46 @@ function InnerViewController({
       action!.reset().play();
     });
 
+    // Once the open animation finishes, hand off to OrbitControls so the
+    // user can freely rotate to see all sides of the interior.
+    let finishedCount = 0;
+    let handled = false;
+    const handleOpenFinished = () => {
+      finishedCount++;
+      if (!handled && finishedCount >= actionList.length && glbCamRef.current) {
+        handled = true;
+        const glbCam = glbCamRef.current;
+        const defCam = defaultCamera as THREE.PerspectiveCamera;
+
+        // Copy Camera001's world transform + projection to the default camera
+        glbCam.getWorldPosition(defCam.position);
+        glbCam.getWorldQuaternion(defCam.quaternion);
+        defCam.fov = glbCam.fov;
+        defCam.near = glbCam.near;
+        defCam.far = glbCam.far;
+        defCam.aspect = glbCam.aspect;
+        defCam.updateProjectionMatrix();
+        defCam.updateMatrixWorld();
+
+        // Compute OrbitControls target: 1.5 units ahead of the camera
+        const forward = new THREE.Vector3(0, 0, -1)
+          .applyQuaternion(defCam.quaternion)
+          .normalize();
+        orbitTargetRef.current
+          .copy(defCam.position)
+          .addScaledVector(forward, 1.5);
+
+        set({ camera: defCam });
+        orbitReadyRef.current = true;
+        setOrbitReady(true);
+        onOrbitReady?.();
+      }
+    };
+    mixer.addEventListener("finished", handleOpenFinished);
+
     return () => {
       mixer.stopAllAction();
+      mixer.removeEventListener("finished", handleOpenFinished);
       hasPlayedRef.current = false;
     };
   }, [actions, mixer]);
@@ -779,6 +836,16 @@ function InnerViewController({
   // Play in reverse when closing, call onCloseDone when done
   useEffect(() => {
     if (!isClosing) return;
+
+    if (orbitReadyRef.current) {
+      // defaultCamera is active at the user's orbit position.
+      // Keep it — don't switch back to Camera001 (that would cause a visual jump).
+      // The reverse animation plays invisibly on Camera001; when done, CameraRig
+      // smoothly transitions defaultCamera from the orbit position to the new preset.
+      closedFromOrbitRef.current = true;
+    }
+    orbitReadyRef.current = false;
+    setOrbitReady(false);
 
     const actionList = Object.values(actions).filter(Boolean);
     if (actionList.length === 0) {
@@ -805,6 +872,23 @@ function InnerViewController({
     };
   }, [isClosing, actions, mixer, onCloseDone]);
 
+  // After the open animation finishes, orbit Camera001 around Y.
+  // Running at priority 1 ensures this executes after the animation mixer
+  // (priority 0), so our position wins each frame.
+  if (orbitReady) {
+    return (
+      <OrbitControls
+        makeDefault
+        enablePan={false}
+        enableZoom={false}
+        enableRotate={true}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 2}
+        target={orbitTargetRef.current.toArray() as [number, number, number]}
+      />
+    );
+  }
+
   return null;
 }
 
@@ -822,6 +906,7 @@ export default function BagScene({
   lightingState,
   isClosingInner,
   onInnerCloseDone,
+  onOrbitReady,
   onHotspotPositionsUpdate,
 }: {
   modelUrl: string;
@@ -832,6 +917,7 @@ export default function BagScene({
   lightingState: LightingState;
   isClosingInner: boolean;
   onInnerCloseDone: () => void;
+  onOrbitReady?: () => void;
   onHotspotPositionsUpdate: (
     positions: Record<string, { x: number; y: number; visible: boolean }>,
   ) => void;
@@ -877,6 +963,7 @@ export default function BagScene({
           modelUrl={modelUrl}
           isClosing={isClosingInner}
           onCloseDone={onInnerCloseDone}
+          onOrbitReady={onOrbitReady}
         />
       ) : (
         <>

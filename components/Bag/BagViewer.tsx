@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useState, useCallback, useEffect } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import type { HotspotDef, ActiveHotspot } from './types';
 import { HOTSPOTS } from './Hotspots';
 import HotspotOverlay from './HotspotOverlay';
@@ -37,11 +37,11 @@ export interface LightingState {
 }
 
 const DEFAULT_LIGHTING: LightingState = {
-  keyIntensity: 1,
-  fillIntensity: 0.8,
+  keyIntensity: 0.4,
+  fillIntensity: 0.5,
   rimIntensity: 0.5,
-  ambientIntensity: 1,
-  toneMappingExposure: 0.8,
+  ambientIntensity: 0.40,
+  toneMappingExposure: 0.45,
   envMapIntensity: 1.2,
   envPreset: 'studio',
 };
@@ -76,6 +76,10 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
   const [isClosingInner, setIsClosingInner] = useState(false);
   const [pendingCamera, setPendingCamera] = useState<Exclude<CameraPreset, 'inner'> | null>(null);
   const [pendingInner, setPendingInner] = useState(false);
+  const [rotateHint, setRotateHint] = useState(false);
+  const mousePos = useRef({ x: 0, y: 0 });
+  const hintRef = useRef<HTMLDivElement>(null);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { playTap } = useAudio();
 
   // After navigating to front to clear a hotspot, wait for camera to settle then open inner view
@@ -87,6 +91,34 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
     }, 700);
     return () => clearTimeout(timer);
   }, [pendingInner]);
+
+  // Hide hint when leaving inner view
+  useEffect(() => {
+    if (activeCamera !== 'inner') {
+      setRotateHint(false);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    }
+  }, [activeCamera]);
+
+  const handleOrbitReady = useCallback(() => {
+    setRotateHint(true);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => setRotateHint(false), 3500);
+  }, []);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    mousePos.current = { x: e.clientX, y: e.clientY };
+    if (hintRef.current) {
+      hintRef.current.style.transform = `translate(${e.clientX + 20}px, ${e.clientY - 20}px)`;
+    }
+  }, []);
+
+  const handlePointerDown = useCallback(() => {
+    if (rotateHint) {
+      setRotateHint(false);
+      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    }
+  }, [rotateHint]);
 
   const handleHotspotClick = useCallback((hotspot: HotspotDef) => {
     playTap();
@@ -137,7 +169,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} onMouseMove={handleMouseMove} onPointerDown={handlePointerDown}>
 
 
       {/* 3D Canvas — Suspense fallback is null because SceneLoader handles it */}
@@ -151,6 +183,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
           lightingState={lighting}
           isClosingInner={isClosingInner}
           onInnerCloseDone={handleInnerCloseDone}
+          onOrbitReady={handleOrbitReady}
           onHotspotPositionsUpdate={setHotspotPositions}
         />
       </Suspense>
@@ -184,6 +217,41 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
       {/* Camera preset bar */}
       <CameraBar activeCamera={activeCamera} onSelect={handleCameraSelect} />
+
+      {/* Rotate hint — follows cursor, shown once orbit unlocks */}
+      <div
+        ref={hintRef}
+        className="pointer-events-none fixed top-0 left-0 z-[9999] transition-opacity duration-500"
+        style={{
+          opacity: rotateHint ? 1 : 0,
+          transform: `translate(${mousePos.current.x + 20}px, ${mousePos.current.y - 20}px)`,
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: '100px',
+            padding: '8px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '7px',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          }}
+        >
+          {/* Rotate icon */}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21.5 2v6h-6" />
+            <path d="M21.34 15.57a10 10 0 1 1-.57-8.38" />
+          </svg>
+          <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '11px', letterSpacing: '0.08em', fontWeight: 500 }}>
+            Drag to explore
+          </span>
+        </div>
+      </div>
 
       {/* ── Lighting debug panel ── */}
       <div className="fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
@@ -253,6 +321,6 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 }
 
 /* ─── Public export ─── */
-export default function BagViewer({ modelPath = '/model/bag_final.glb' }: BagViewerProps) {
+export default function BagViewer({ modelPath = '/model/bag.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }
