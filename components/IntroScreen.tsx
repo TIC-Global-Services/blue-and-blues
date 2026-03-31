@@ -122,8 +122,8 @@ export default function IntroScreen({
     /* 🔒 LOCK SCROLL */
     document.body.style.overflow = 'hidden';
 
-    /* 🔥 SMOOTH SCROLL CONTROL */
-    const SCROLL_POWER = 0.003;
+    /* SMOOTH SCROLL CONTROL */
+    const SCROLL_POWER = 0.0009;
 
     const handleScroll = (e: WheelEvent) => {
       // Once auto-play has kicked in, ignore scroll input
@@ -146,6 +146,7 @@ export default function IntroScreen({
     return () => {
       ctx.revert();
       window.removeEventListener('wheel', handleScroll);
+      document.body.style.overflow = '';
     };
   }, [onDone]);
 
@@ -181,54 +182,55 @@ export default function IntroScreen({
       </div>
 
       {/* SCENE 1 */}
-      <div className="scene1 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0">
+      <div className="scene1 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1">
         <div className="absolute inset-0 bg-white/5 blur-3xl opacity-20" />
-        {[
-          'As you pursue your Purpose,',
-          'EVERY MOMENT COUNTS.',
-          'You need fewer distractions.',
-          'Just quiet certainty.',
-        ].map((line, i) => (
-          <p
-            key={i}
-            className="my-2 text-center text-white uppercase tracking-[0.15em] text-sm sm:text-base"
-          >
-            {line.split(' ').map((word, j) => (
-              <span
-                key={j}
-                className={`word inline-block mr-2 ${
-                  i === 1
-                    ? 'text-white font-medium tracking-[0.18em]'
-                    : 'text-white/70'
-                }`}
-              >
-                {word}
-              </span>
-            ))}
-          </p>
-        ))}
+        {/* "A quiet legacy" — small, wide-tracked, dim */}
+        <p className="text-center uppercase tracking-[0.45em] text-[10px] sm:text-xs text-white/35 font-medium">
+          {'A quiet legacy'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.45em]">{word}</span>
+          ))}
+        </p>
+        {/* "born in Milan," — large, tight, bright */}
+        <p className="text-center uppercase tracking-[0.06em] text-3xl sm:text-5xl text-white font-semibold leading-none">
+          {'born in Milan,'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.18em]">{word}</span>
+          ))}
+        </p>
+        {/* "beautifully grounded in" — small, wide, dim */}
+        <p className="text-center uppercase tracking-[0.45em] text-[10px] sm:text-xs text-white/35 font-medium">
+          {'beautifully grounded in'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.45em]">{word}</span>
+          ))}
+        </p>
+        {/* "Indian Craftsmanship" — medium, brand accent */}
+        <p className="text-center uppercase tracking-[0.12em] text-xl sm:text-2xl text-[#7EC9DA] font-medium">
+          {'Indian Craftsmanship'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.25em]">{word}</span>
+          ))}
+        </p>
       </div>
 
       {/* SCENE 2 */}
-      <div className="scene2 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0">
+      <div className="scene2 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1">
         <div className="absolute inset-0 bg-white/5 blur-3xl opacity-20" />
-        {[
-          'Blue & Blues.',
-          'Italian design heritage.',
-          'Indian craftsmanship.',
-          'Every detail matters.',
-        ].map((line, i) => (
-          <p
-            key={i}
-            className="my-2 text-center text-white uppercase tracking-[0.15em] text-sm sm:text-base"
-          >
-            {line.split(' ').map((word, j) => (
-              <span key={j} className="word inline-block mr-2 text-white/70">
-                {word}
-              </span>
-            ))}
-          </p>
-        ))}
+        {/* "Crafting pieces…" — small, wide, dim */}
+        <p className="text-center uppercase tracking-[0.4em] text-[10px] sm:text-xs text-white/35 font-medium">
+          {'Crafting pieces that evolve alongside you,'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.4em]">{word}</span>
+          ))}
+        </p>
+        {/* "Not just carried, but lived." — medium, softer white */}
+        <p className="text-center uppercase tracking-[0.2em] text-base sm:text-lg text-white/60 font-normal mt-3">
+          {'Not just carried, but lived.'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block mr-[0.3em]">{word}</span>
+          ))}
+        </p>
+        {/* "BLUE&BLUES." — hero moment: large, bold, full white */}
+        <p className="text-center uppercase  text-4xl sm:text-6xl text-white font-bold mt-5 ">
+          {'BLUE & BLUES.'.split(' ').map((word, j) => (
+            <span key={j} className="word inline-block">{word}</span>
+          ))}
+        </p>
       </div>
 
       {/* WHITE BLOOM */}

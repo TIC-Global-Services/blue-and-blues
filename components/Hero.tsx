@@ -119,21 +119,14 @@ const Hero = () => {
 
     window.scrollTo({ top: 0, behavior: "instant" });
 
-    // Keep scroll locked
-    setLockScroll(true);
-
-    // Remove intro overlay
+    // Make hero visible BEFORE removing intro overlay so there's no white flash
+    setHeroVisible(true);
     setShowIntro(false);
-
-    // Show hero (from light)
-    setTimeout(() => {
-      setHeroVisible(true);
-    }, 600);
 
     // 🔥 Unlock scroll AFTER hero settles
     setTimeout(() => {
       setLockScroll(false);
-    }, 1800); // tweak 1500–2000 for feel
+    }, 1200);
   };
 
   useEffect(() => {
