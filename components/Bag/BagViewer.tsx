@@ -321,6 +321,6 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 }
 
 /* ─── Public export ─── */
-export default function BagViewer({ modelPath = '/model/bag.glb' }: BagViewerProps) {
+export default function BagViewer({ modelPath = '/model/axi16.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }

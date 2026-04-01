@@ -13,7 +13,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { useGLTF } from "@react-three/drei";
 
 // Kick off model download immediately — before the Canvas even mounts
-useGLTF.preload("/model/bag.glb");
+useGLTF.preload("/model/axi16.glb");
 
 const INTRO_KEY = "bb_intro_seen";
 
@@ -179,7 +179,7 @@ const Hero = () => {
 
         {/* 3D bag */}
         <main className="absolute inset-0 z-40 overflow-hidden w-full h-screen">
-          <BagViewer modelPath="/model/bag.glb" />
+          <BagViewer modelPath="/model/axi16.glb"/>
         </main>
 
         {/* ── Copy overlay ── */}
