@@ -895,7 +895,7 @@ function InnerViewController({
 /* ─────────────────────────────────────────────
    Root export
 ───────────────────────────────────────────── */
-useGLTF.preload("/model/bag_final");
+useGLTF.preload("/model/axi16.glb");
 
 export default function BagScene({
   modelUrl,
