@@ -119,34 +119,52 @@ export default function IntroScreen({
       });
     }, containerRef);
 
-    /* 🔒 LOCK SCROLL */
-    document.body.style.overflow = 'hidden';
-
     /* SMOOTH SCROLL CONTROL */
     const SCROLL_POWER = 0.0009;
 
     const handleScroll = (e: WheelEvent) => {
-      // Once auto-play has kicked in, ignore scroll input
       if (!timelineRef.current || autoPlayRef.current) return;
-
       const delta = e.deltaY * SCROLL_POWER;
       let next = timelineRef.current.progress() + delta;
       next = Math.max(0, Math.min(1, next));
-
       gsap.to(timelineRef.current, {
         progress: next,
         duration: 0.35,
         ease: 'power2.out',
-        overwrite: true, // kill any in-flight tween so they don't pile up
+        overwrite: true,
+      });
+    };
+
+    /* TOUCH CONTROL — mirrors wheel handler so user controls the pace */
+    const TOUCH_POWER = 0.003;
+    let lastTouchY = 0;
+    const handleTouchStart = (e: TouchEvent) => {
+      lastTouchY = e.touches[0].clientY;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!timelineRef.current || autoPlayRef.current) return;
+      const dy = lastTouchY - e.touches[0].clientY;
+      lastTouchY = e.touches[0].clientY;
+      const delta = dy * TOUCH_POWER;
+      let next = timelineRef.current.progress() + delta;
+      next = Math.max(0, Math.min(1, next));
+      gsap.to(timelineRef.current, {
+        progress: next,
+        duration: 0.35,
+        ease: 'power2.out',
+        overwrite: true,
       });
     };
 
     window.addEventListener('wheel', handleScroll, { passive: true });
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
 
     return () => {
       ctx.revert();
       window.removeEventListener('wheel', handleScroll);
-      document.body.style.overflow = '';
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
     };
   }, [onDone]);
 

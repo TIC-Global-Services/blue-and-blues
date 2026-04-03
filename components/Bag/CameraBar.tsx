@@ -8,7 +8,7 @@ const PRESETS: { id: CameraPreset; label: string }[] = [
   { id: 'front', label: 'Front' },
   { id: 'back',  label: 'Back'  },
   { id: 'side',  label: 'Side'  },
-  { id: 'inner', label: 'Inner View' },
+  { id: 'inner', label: 'Inside' },
   // { id: 'top',   label: 'Top'   },
 ];
 
@@ -36,7 +36,7 @@ export default function CameraBar({ activeCamera, onSelect }: CameraBarProps) {
             key={id}
             onClick={() => onSelect(id)}
             className={`
-              relative px-5 py-2 text-xs uppercase tracking-[0.12em]
+              relative px-5 py-2 text-[9px] md:text-xs uppercase tracking-[0.12em]
               transition-colors duration-200
               border-r border-white/10 cursor-pointer
               ${index === PRESETS.length - 1 ? 'border-r-0' : ''}

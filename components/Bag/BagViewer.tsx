@@ -254,7 +254,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       </div>
 
       {/* ── Lighting debug panel ── */}
-      <div className="fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
+      <div className="hidden fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
         <button
           onClick={() => setDebugOpen((v) => !v)}
           className="bg-black/70 text-white/80 text-[10px] tracking-widest uppercase px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors"
@@ -324,3 +324,4 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 export default function BagViewer({ modelPath = '/model/axis17.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }
+

@@ -5,6 +5,8 @@ import { createContext, useContext, useCallback, useEffect, useRef, useState, Re
 interface AudioContextValue {
   playing: boolean;
   toggle: () => void;
+  play: () => void;
+  pause: () => void;
   playTap: () => void;
   playHover: () => void;
 }
@@ -39,6 +41,19 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const play = useCallback(() => {
+    const audio = soundtrackRef.current;
+    if (!audio) return;
+    audio.play().then(() => setPlaying(true)).catch(() => {});
+  }, []);
+
+  const pause = useCallback(() => {
+    const audio = soundtrackRef.current;
+    if (!audio) return;
+    audio.pause();
+    setPlaying(false);
+  }, []);
+
   const toggle = useCallback(() => {
     const audio = soundtrackRef.current;
     if (!audio) return;
@@ -67,7 +82,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [playing]);
 
   return (
-    <AudioCtx.Provider value={{ playing, toggle, playTap, playHover }}>
+    <AudioCtx.Provider value={{ playing, toggle, play, pause, playTap, playHover }}>
       {children}
     </AudioCtx.Provider>
   );

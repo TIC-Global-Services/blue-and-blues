@@ -36,7 +36,7 @@ export default function MusicButton({ playing, onToggle }: MusicButtonProps) {
   return (
     <button
       onClick={onToggle}
-      className={`fixed bottom-8 left-10 z-[90] flex items-center gap-2.5 transition-colors duration-300 cursor-pointer ${isLight ? 'text-black/70 hover:text-black' : 'text-white/60 hover:text-white'}`}
+      className={`fixed bottom-8 left-1/2 -translate-x-1/2 md:-translate-x-0 md:left-10 z-[90] flex items-center gap-2.5 transition-colors duration-300 cursor-pointer ${isLight ? 'text-black/70 hover:text-black' : 'text-white/60 hover:text-white'}`}
       aria-label={playing ? 'Mute soundtrack' : 'Play soundtrack'}
     >
       {/* Animated sound bars */}

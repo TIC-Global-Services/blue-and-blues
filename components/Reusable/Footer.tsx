@@ -108,7 +108,7 @@ const Footer = () => {
 
             <span className="hidden sm:inline text-white/90">×</span>
 
-            <span>
+            <span className=" text-center">
               Designed &amp; Developed By{" "}
               <Link
                 href="https://www.theinternetcompany.one/"

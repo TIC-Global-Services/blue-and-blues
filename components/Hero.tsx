@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, Variants } from "framer-motion";
 import BagViewer from "@/components/Bag";
 import LightRays from "@/components/Reusable/LightRays";
@@ -104,14 +104,20 @@ const Hero = () => {
   // Controls when hero in-animation fires
   const [heroVisible, setHeroVisible] = useState(false);
   const [lockScroll, setLockScroll] = useState(true);
+  const heroRef = useRef<HTMLDivElement>(null);
 
-  const { playing, toggle, playTap } = useAudio();
+  const { playing, toggle, play, pause, playTap } = useAudio();
 
   const handleModelLoaded = () => {
     setModelLoaded(true);
     const seen = sessionStorage.getItem(INTRO_KEY);
     setShowIntro(!seen);
-    if (seen) setHeroVisible(true);
+    play();
+    if (seen) {
+      setHeroVisible(true);
+      // Unlock scroll 3 s after hero reveal (no intro path)
+      setTimeout(() => setLockScroll(false), 3000);
+    }
   };
 
   const handleIntroDone = () => {
@@ -122,20 +128,51 @@ const Hero = () => {
     // Make hero visible BEFORE removing intro overlay so there's no white flash
     setHeroVisible(true);
     setShowIntro(false);
+    play();
 
-    // 🔥 Unlock scroll AFTER hero settles
+    // Unlock scroll 3 s after hero reveal
     setTimeout(() => {
       setLockScroll(false);
-    }, 1200);
+    }, 3000);
   };
+
+  // Pause music automatically when hero scrolls out of view
+  useEffect(() => {
+    const el = heroRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (!entry.isIntersecting) pause(); },
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [pause]);
 
   useEffect(() => {
     if (lockScroll) {
+      // position:fixed is required for iOS Safari — overflow:hidden alone doesn't block scroll
+      document.documentElement.style.overflow = "hidden";
       document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
+      document.body.style.top = "0";
     } else {
+      document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+      window.scrollTo(0, 0);
     }
-  }, [lockScroll]);
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
+      document.body.style.top = "";
+    };
+  // showIntro dep ensures we re-apply the lock after IntroScreen unmounts and clears overflow
+  }, [lockScroll, showIntro]);
 
   return (
     <>
@@ -152,7 +189,8 @@ const Hero = () => {
 
       {/* ── Hero ── */}
       <motion.div
-        className="relative w-full h-screen overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
+        ref={heroRef}
+        className="relative w-full h-dvh overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
         variants={heroVariants}
         initial="hidden"
         animate={heroVisible ? "visible" : "hidden"}
@@ -178,7 +216,7 @@ const Hero = () => {
         </div>
 
         {/* 3D bag */}
-        <main className="absolute inset-0 z-40 overflow-hidden w-full h-screen">
+        <main className="absolute inset-0 z-40 overflow-hidden w-full h-dvh">
           <BagViewer modelPath="/model/axis17.glb" />
         </main>
 
@@ -221,14 +259,14 @@ const Hero = () => {
 
           {/* Bottom-right — body copy + CTA */}
           <motion.div
-            className="absolute bottom-[16%] md:bottom-[4%] left-0 right-0 md:left-auto md:right-[2%] flex flex-col items-center md:items-end gap-4 md:gap-5 pointer-events-auto z-40 px-4 md:px-0"
+            className="absolute bottom-[20%] md:bottom-[4%] left-0 right-0 md:left-auto md:right-[2%] flex flex-col items-center md:items-end gap-4 md:gap-5 pointer-events-auto z-40 px-4 md:px-0"
             variants={copyVariants}
             initial="hidden"
             animate={heroVisible ? "visible" : "hidden"}
           >
             {/* Body */}
             <motion.p
-              className=" text-[9px] md:text-xs text-white/55 font-light leading-relaxed text-center md:text-right uppercase max-w-xs"
+              className=" hidden md:block text-[9px] md:text-xs text-white/55 font-light leading-relaxed text-center md:text-right uppercase max-w-xs"
               variants={copyChildVariants}
             >
               A quiet luxury leather goods brand rooted in Italian design

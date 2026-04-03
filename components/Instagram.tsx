@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import gsap from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 
@@ -8,14 +8,18 @@ gsap.registerPlugin(ScrollTrigger)
 
 const POSTS = [
   { src: "/gram/1.mp4", left: "18%", top: "8%",  w: 180 },
-  { src: "/gram/2.mp4", left: "58%", top: "16%",  w: 250 },
-  { src: "/gram/4.mp4", left: "16%", top: "62%", w: 275 },
-  { src: "/gram/3.mp4", left: "70%", top: "55%", w: 180 },
+  { src: "/gram/2.mp4", left: "55%", top: "16%",  w: 250 },
+  { src: "/gram/4.mp4", left: "14%", top: "62%", w: 275 },
+  { src: "/gram/3.mp4", left: "68%", top: "55%", w: 180 },
   { src: "/gram/5.mp4", left: "2%",  top: "32%", w: 175 },
-  { src: "/gram/6.mp4", left: "78%", top: "28%", w: 300 },
+  { src: "/gram/6.mp4", left: "72%", top: "28%", w: 300 },
   { src: "/gram/7.mp4", left: "32%", top: "60%", w: 160 },
-  { src: "/gram/8.mp4", left: "46%", top: "4%",  w: 165 },
+  { src: "/gram/8.mp4", left: "44%", top: "4%",  w: 165 },
 ]
+
+// Breakpoint below which we scale down post sizes
+const MOBILE_BP = 768
+const MOBILE_CANVAS = 520 // treat this as the "design width" for mobile scaling
 
 const WAVE_SIZE   = 4    // posts per wave
 const INITIAL_GAP = 0.8  // pause before first wave so it appears after scroll starts
@@ -28,6 +32,17 @@ const IN_STAGGER  = 0.06
 export default function Instagram() {
   const sectionRef = useRef<HTMLDivElement>(null)
   const itemsRef   = useRef<(HTMLDivElement | null)[]>([])
+  const [postScale, setPostScale] = useState(1)
+
+  useEffect(() => {
+    const update = () => {
+      const w = window.innerWidth
+      setPostScale(w < MOBILE_BP ? w / MOBILE_CANVAS : 1)
+    }
+    update()
+    window.addEventListener('resize', update)
+    return () => window.removeEventListener('resize', update)
+  }, [])
 
   useEffect(() => {
     const section = sectionRef.current
@@ -86,11 +101,11 @@ export default function Instagram() {
       <div className="sticky top-0 h-screen overflow-hidden">
 
         {/* Center text — always on top */}
-        <div className="absolute inset-0 flex flex-col items-center gap-4 justify-center z-20 pointer-events-none">
-          <p className="uppercase text-primary font-medium text-2xl tracking-[0.25em]">
+        <div className="absolute inset-0 flex flex-col items-center gap-3 justify-center z-20 pointer-events-none px-4">
+          <p className="uppercase text-primary font-medium text-base md:text-2xl tracking-[0.12em] md:tracking-[0.25em]">
             Seen on the <span className="text-slate-400">'Gram</span>
           </p>
-          <h2 className="text-4xl md:text-6xl font-medium  text-center">
+          <h2 className="text-2xl md:text-6xl font-medium text-center break-all md:break-normal">
             @blueandblues.official
           </h2>
         </div>
@@ -101,7 +116,7 @@ export default function Instagram() {
             key={i}
             ref={el => { itemsRef.current[i] = el }}
             className="absolute rounded-2xl overflow-hidden shadow-xl z-10"
-            style={{ left: post.left, top: post.top, width: post.w }}
+            style={{ left: post.left, top: post.top, width: Math.round(post.w * postScale) }}
           >
             <video
               src={post.src}

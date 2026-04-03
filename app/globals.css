@@ -5,6 +5,12 @@
   --foreground: #171717;
 }
 
+html {
+  /* Dark background prevents white flash during iOS overscroll bounce */
+  background: #060c18;
+  overscroll-behavior: none;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
