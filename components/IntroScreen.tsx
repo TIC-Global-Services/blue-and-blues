@@ -21,17 +21,22 @@ export default function IntroScreen({
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Force GPU layers on all animated elements upfront
+      gsap.set(['.logo', '.scene1', '.scene2', '.light-expand', '.white-flash', '.scroll-hint'], {
+        force3D: true,
+        willChange: 'transform, opacity',
+      });
+
       const tl = gsap.timeline({ paused: true });
       timelineRef.current = tl;
 
       /* ─── HIDE SCROLL HINT ─── */
       tl.to('.scroll-hint', { opacity: 0, duration: 0.4 }, 0.2);
 
-      /* ─── LOGO OUT ─── */
+      /* ─── LOGO OUT — opacity + scale only (no blur = no repaint) ─── */
       tl.to('.logo', {
         opacity: 0,
         scale: 0.85,
-        filter: 'blur(20px)',
         duration: 0.4,
       });
 
@@ -40,21 +45,20 @@ export default function IntroScreen({
 
       tl.fromTo(
         '.scene1 .word',
-        { y: 50, opacity: 0, filter: 'blur(12px)' },
+        { y: 40, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          filter: 'blur(0px)',
           stagger: 0.05,
-          duration: 0.9,
+          duration: 0.7,
           ease: 'power3.out',
         }
       );
 
+      /* ─── SCENE 1 OUT — simple opacity fade ─── */
       tl.to('.scene1', {
         opacity: 0,
-        filter: 'blur(20px)',
-        duration: 0.7,
+        duration: 0.5,
       });
 
       /* ─── SCENE 2 ─── */
@@ -62,13 +66,12 @@ export default function IntroScreen({
 
       tl.fromTo(
         '.scene2 .word',
-        { y: 50, opacity: 0, filter: 'blur(12px)' },
+        { y: 40, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          filter: 'blur(0px)',
           stagger: 0.05,
-          duration: 0.9,
+          duration: 0.7,
           ease: 'power3.out',
         }
       );
@@ -76,34 +79,32 @@ export default function IntroScreen({
       /* ─── SCENE 2 OUT → triggers auto-play of the ending ─── */
       tl.to('.scene2', {
         opacity: 0,
-        filter: 'blur(20px)',
-        duration: 0.7,
+        duration: 0.5,
         onComplete: () => {
           if (autoPlayRef.current) return;
           autoPlayRef.current = true;
           // Auto-drive the rest of the timeline to completion
           gsap.to(timelineRef.current!, {
             progress: 1,
-            duration: 3,
+            duration: 1.8,
             ease: 'power2.inOut',
           });
         },
       });
 
-      /* ─── LIGHT RAYS BLAST TO FULL SCREEN ─── */
+      /* ─── LIGHT RAYS BLAST TO FULL SCREEN — transform + opacity only ─── */
       tl.fromTo(
         '.light-expand',
-        { scale: 1, opacity: 0.6, filter: 'brightness(1)' },
+        { scale: 1, opacity: 0.6 },
         {
           scale: 22,
           opacity: 1,
-          filter: 'brightness(8)',
           duration: 2.4,
           ease: 'power3.in',
         }
       );
 
-      /* ─── WHITE FLASH IN — rides in on the brightness peak ─── */
+      /* ─── WHITE FLASH IN — rides in on the scale peak ─── */
       tl.to('.white-flash', {
         opacity: 1,
         duration: 0.35,
@@ -120,7 +121,7 @@ export default function IntroScreen({
     }, containerRef);
 
     /* SMOOTH SCROLL CONTROL */
-    const SCROLL_POWER = 0.0009;
+    const SCROLL_POWER = 0.002;
 
     const handleScroll = (e: WheelEvent) => {
       if (!timelineRef.current || autoPlayRef.current) return;
@@ -136,7 +137,7 @@ export default function IntroScreen({
     };
 
     /* TOUCH CONTROL — mirrors wheel handler so user controls the pace */
-    const TOUCH_POWER = 0.003;
+    const TOUCH_POWER = 0.007;
     let lastTouchY = 0;
     const handleTouchStart = (e: TouchEvent) => {
       lastTouchY = e.touches[0].clientY;
@@ -174,7 +175,7 @@ export default function IntroScreen({
       className="fixed inset-0 z-[9999] overflow-hidden bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,_#2a3f5f_0%,_#162035_35%,_#0a1220_65%,_#060c18_100%)]"
     >
       {/* LIGHT RAYS */}
-      <div className="light-expand absolute inset-0 opacity-60">
+      <div className="light-expand absolute inset-0 opacity-60" style={{ willChange: 'transform, opacity' }}>
         <LightRaysComponent
           {...lightRaysProps}
           raysSpeed={0.6}
@@ -200,8 +201,7 @@ export default function IntroScreen({
       </div>
 
       {/* SCENE 1 */}
-      <div className="scene1 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1">
-        <div className="absolute inset-0 bg-white/5 blur-3xl opacity-20" />
+      <div className="scene1 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1" style={{ willChange: 'opacity, transform' }}>
         {/* "A quiet legacy" — small, wide-tracked, dim */}
         <p className="text-center uppercase tracking-[0.45em] text-[10px] sm:text-xs text-white/35 font-medium">
           {'A quiet legacy'.split(' ').map((word, j) => (
@@ -229,8 +229,7 @@ export default function IntroScreen({
       </div>
 
       {/* SCENE 2 */}
-      <div className="scene2 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1">
-        <div className="absolute inset-0 bg-white/5 blur-3xl opacity-20" />
+      <div className="scene2 absolute inset-0 flex flex-col items-center justify-center px-6 opacity-0 gap-1" style={{ willChange: 'opacity, transform' }}>
         {/* "Crafting pieces…" — small, wide, dim */}
         <p className="text-center uppercase tracking-[0.4em] text-[10px] sm:text-xs text-white/35 font-medium">
           {'Crafting pieces that evolve alongside you,'.split(' ').map((word, j) => (

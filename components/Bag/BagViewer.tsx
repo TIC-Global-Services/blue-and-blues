@@ -92,24 +92,26 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
     return () => clearTimeout(timer);
   }, [pendingInner]);
 
-  // Hide hint when leaving inner view
+  // Show hint 8s after entering inner view, hide when leaving
   useEffect(() => {
-    if (activeCamera !== 'inner') {
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    if (activeCamera === 'inner') {
+      hintTimerRef.current = setTimeout(() => {
+        setRotateHint(true);
+        hintTimerRef.current = setTimeout(() => setRotateHint(false), 7000);
+      }, 3000);
+    } else {
       setRotateHint(false);
-      if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
     }
+    return () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); };
   }, [activeCamera]);
 
-  const handleOrbitReady = useCallback(() => {
-    setRotateHint(true);
-    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
-    hintTimerRef.current = setTimeout(() => setRotateHint(false), 3500);
-  }, []);
+  const handleOrbitReady = useCallback(() => {}, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     mousePos.current = { x: e.clientX, y: e.clientY };
     if (hintRef.current) {
-      hintRef.current.style.transform = `translate(${e.clientX + 20}px, ${e.clientY - 20}px)`;
+      hintRef.current.style.transform = `translate(${e.clientX + 16}px, ${e.clientY - 36}px)`;
     }
   }, []);
 
@@ -221,10 +223,10 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       {/* Rotate hint — follows cursor, shown once orbit unlocks */}
       <div
         ref={hintRef}
-        className="pointer-events-none fixed top-0 left-0 z-[9999] transition-opacity duration-500"
+        className="pointer-events-none fixed top-0 left-0 z-[9999] transition-opacity duration-150"
         style={{
           opacity: rotateHint ? 1 : 0,
-          transform: `translate(${mousePos.current.x + 20}px, ${mousePos.current.y - 20}px)`,
+          transform: `translate(${mousePos.current.x + 16}px, ${mousePos.current.y - 36}px)`,
         }}
       >
         <div
@@ -248,7 +250,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
             <path d="M21.34 15.57a10 10 0 1 1-.57-8.38" />
           </svg>
           <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '11px', letterSpacing: '0.08em', fontWeight: 500 }}>
-            Drag to explore
+            Drag to rotate
           </span>
         </div>
       </div>

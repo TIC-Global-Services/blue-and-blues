@@ -115,8 +115,8 @@ const Hero = () => {
     play();
     if (seen) {
       setHeroVisible(true);
-      // Unlock scroll 3 s after hero reveal (no intro path)
-      setTimeout(() => setLockScroll(false), 3000);
+      // Unlock scroll 1 s after hero reveal (no intro path)
+      setTimeout(() => setLockScroll(false), 1000);
     }
   };
 
@@ -130,10 +130,10 @@ const Hero = () => {
     setShowIntro(false);
     play();
 
-    // Unlock scroll 3 s after hero reveal
+    // Unlock scroll 1 s after hero reveal
     setTimeout(() => {
       setLockScroll(false);
-    }, 3000);
+    }, 1000);
   };
 
   // Pause music automatically when hero scrolls out of view

@@ -797,6 +797,10 @@ function InnerViewController({
       finishedCount++;
       if (!handled && finishedCount >= actionList.length && glbCamRef.current) {
         handled = true;
+
+        // Fire hint immediately — before the synchronous camera math below
+        onOrbitReady?.();
+
         const glbCam = glbCamRef.current;
         const defCam = defaultCamera as THREE.PerspectiveCamera;
 
@@ -821,7 +825,6 @@ function InnerViewController({
         set({ camera: defCam });
         orbitReadyRef.current = true;
         setOrbitReady(true);
-        onOrbitReady?.();
       }
     };
     mixer.addEventListener("finished", handleOpenFinished);
