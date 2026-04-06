@@ -52,7 +52,7 @@ const CAMERA_PRESETS: Record<
     target: new THREE.Vector3(0, 0, 0),
   },
   back: {
-    position: new THREE.Vector3(0, 0.1, -2.5),
+    position: new THREE.Vector3(0, 0.1, -3.3),
     target: new THREE.Vector3(0, 0, 0),
   },
   side: {
@@ -678,7 +678,7 @@ function Lighting({ ls }: { ls: LightingState }) {
   return (
     <>
       <directionalLight
-        position={[3, 5, 3]}
+        position={[0, 5, 3]}
         intensity={ls.keyIntensity}
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -898,7 +898,7 @@ function InnerViewController({
 /* ─────────────────────────────────────────────
    Root export
 ───────────────────────────────────────────── */
-useGLTF.preload("/model/axis17.glb");
+useGLTF.preload("/model/bag_new.glb");
 
 export default function BagScene({
   modelUrl,

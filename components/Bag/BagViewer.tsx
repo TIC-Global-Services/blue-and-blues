@@ -38,7 +38,7 @@ export interface LightingState {
 
 const DEFAULT_LIGHTING: LightingState = {
   keyIntensity: 0.4,
-  fillIntensity: 0.5,
+  fillIntensity: 0.2,
   rimIntensity: 0.5,
   ambientIntensity: 0.40,
   toneMappingExposure: 0.45,
@@ -323,7 +323,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 }
 
 /* ─── Public export ─── */
-export default function BagViewer({ modelPath = '/model/axis17.glb' }: BagViewerProps) {
+export default function BagViewer({ modelPath = '/model/bag_new.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }
 
