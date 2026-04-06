@@ -37,24 +37,24 @@ export interface LightingState {
 }
 
 const DEFAULT_LIGHTING: LightingState = {
-  keyIntensity: 0.4,
-  fillIntensity: 0.2,
-  rimIntensity: 0.5,
-  ambientIntensity: 0.40,
-  toneMappingExposure: 0.45,
-  envMapIntensity: 1.2,
-  envPreset: 'studio',
+  keyIntensity: 1.2,          // strong main light
+  fillIntensity: 2,        // soft shadow lift
+  rimIntensity: 1.1,          // luxury edge highlight
+  ambientIntensity: 1.60,     // keep contrast
+  toneMappingExposure: 0.45,   // FIXED exposure
+  envMapIntensity: 2.50,       // strong reflections
+  envPreset: 'warehouse',          // better HDR than studio
 };
 
 const DEFAULT_FX: FXState = {
   bloom: false,
-  bloomIntensity: 0.2,
+  bloomIntensity: 0.15,
   dof: false,
   dofFocusDistance: 0.02,
-  dofBokehScale: 3,
-  colorGrading: true,
-  exposure: 0.95,
-  saturation: 0.8,
+  dofBokehScale: 2,
+  colorGrading: false, 
+  exposure: 1.0,
+  saturation: 1.0,
 };
 
 interface BagViewerProps {
@@ -256,7 +256,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       </div>
 
       {/* ── Lighting debug panel ── */}
-      <div className="hidden fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
+      <div className="fixed pointer-events-auto select-none" style={{ top: '100px', right: '16px', zIndex: 99999 }}>
         <button
           onClick={() => setDebugOpen((v) => !v)}
           className="bg-black/70 text-white/80 text-[10px] tracking-widest uppercase px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors"
@@ -323,7 +323,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 }
 
 /* ─── Public export ─── */
-export default function BagViewer({ modelPath = '/model/bag_new.glb' }: BagViewerProps) {
+export default function BagViewer({ modelPath = '/model/bag_final.glb' }: BagViewerProps) {
   return <BagViewerInner modelPath={modelPath} />;
 }
 

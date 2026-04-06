@@ -44,7 +44,7 @@ import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
    Camera presets
 ───────────────────────────────────────────── */
 const CAMERA_PRESETS: Record<
-  Exclude<CameraPreset, 'inner'>,
+  Exclude<CameraPreset, "inner">,
   { position: THREE.Vector3; target: THREE.Vector3 }
 > = {
   front: {
@@ -84,7 +84,7 @@ const realisticWaterShader = {
       alpha: { value: 1.0 },
       time: { value: 0.0 },
       size: { value: 2.5 },
-      distortionScale: { value: 0.5 }, // lower = cleaner reflection, bag shape visible
+      distortionScale: { value: 0.35 }, // lower = cleaner reflection, bag shape visible
       textureMatrix: { value: new Matrix4() },
       sunColor: { value: new Color(0x99ccff) },
       sunDirection: { value: new Vector3(0.577, 0.577, 0.577) },
@@ -252,12 +252,12 @@ const realisticWaterShader = {
       float rf0       = 0.02; // lower base = more reflective at all angles
       float fresnel   = rf0 + (1.0 - rf0) * pow(1.0 - cosTheta, 4.0);
       // Apply user reflectivity scale — boosted multiplier for clear bag reflection
-      fresnel *= uReflectivity * 3.5;
+      fresnel *= uReflectivity * 1.5;
       fresnel  = clamp(fresnel, 0.0, 1.0);
 
       /* ── Mirror reflection sample ── */
-     vec2 distortion = surfNorm.xz * (0.001 + 1.0 / dist) * distortionScale;
-vec3 reflSample = texture2D(mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion).rgb;
+      vec2 distortion = surfNorm.xz * (0.001 + 1.0 / dist) * distortionScale;
+      vec3 reflSample = texture2D(mirrorSampler, mirrorCoord.xy / mirrorCoord.w + distortion).rgb;
       // Keep reflection bright so the bag is clearly visible
       reflSample *= 1.0;
 
@@ -482,7 +482,13 @@ function WaterPlane() {
 /* ─────────────────────────────────────────────
    Bag mesh
 ───────────────────────────────────────────── */
-function BagModel({ url, envMapIntensity }: { url: string; envMapIntensity: number }) {
+function BagModel({
+  url,
+  envMapIntensity,
+}: {
+  url: string;
+  envMapIntensity: number;
+}) {
   const { scene } = useGLTF(url);
 
   useEffect(() => {
@@ -504,8 +510,15 @@ function BagModel({ url, envMapIntensity }: { url: string; envMapIntensity: numb
     const scaledBox = new THREE.Box3().setFromObject(scene);
     const min = scaledBox.min;
     const max = scaledBox.max;
-    console.log('[BagModel] scaled bounds — min:', min, 'max:', max);
-    console.log('[BagModel] size X:', (max.x - min.x).toFixed(3), 'Y:', (max.y - min.y).toFixed(3), 'Z:', (max.z - min.z).toFixed(3));
+    console.log("[BagModel] scaled bounds — min:", min, "max:", max);
+    console.log(
+      "[BagModel] size X:",
+      (max.x - min.x).toFixed(3),
+      "Y:",
+      (max.y - min.y).toFixed(3),
+      "Z:",
+      (max.z - min.z).toFixed(3),
+    );
   }, [scene]);
 
   // Update envMapIntensity dynamically
@@ -514,7 +527,9 @@ function BagModel({ url, envMapIntensity }: { url: string; envMapIntensity: numb
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh;
         if (mesh.material) {
-          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          const mats = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
           mats.forEach((mat) => {
             if (mat instanceof THREE.MeshStandardMaterial) {
               mat.envMapIntensity = envMapIntensity;
@@ -537,7 +552,7 @@ function CameraRig({
   flyTarget,
   controlsRef,
 }: {
-  preset: Exclude<CameraPreset, 'inner'>;
+  preset: Exclude<CameraPreset, "inner">;
   flyTarget: { position: THREE.Vector3; target: THREE.Vector3 } | null;
   controlsRef: React.RefObject<OrbitControlsImpl | null>;
 }) {
@@ -658,7 +673,7 @@ function PostFX({ fx }: { fx: FXState }) {
       ) : (
         <></>
       )}
-      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      {/* <ToneMapping mode={ToneMappingMode.ACES_FILMIC} /> */}
     </EffectComposer>
   );
 }
@@ -677,29 +692,29 @@ function RendererConfig({ exposure }: { exposure: number }) {
 function Lighting({ ls }: { ls: LightingState }) {
   return (
     <>
+      {/* KEY LIGHT (main highlight) */}
       <directionalLight
-        position={[0, 5, 3]}
+        position={[2, 5, 3]}
         intensity={ls.keyIntensity}
         castShadow
         shadow-mapSize={[2048, 2048]}
-        shadow-camera-near={0.1}
-        shadow-camera-far={10}
-        shadow-camera-left={-3}
-        shadow-camera-right={10}
-        shadow-camera-top={1}
-        shadow-camera-bottom={-3}
-        shadow-bias={-0.0005}
       />
+
+      {/* FILL LIGHT (soft shadow lift) */}
       <directionalLight
         position={[-3, 2, -2]}
         intensity={ls.fillIntensity}
-        color="#b8d4ff"
+        color="#cfe3ff"
       />
+
+      {/* RIM LIGHT (luxury edge glow) */}
       <directionalLight
-        position={[0, -1, -4]}
+        position={[0, 3, -4]}
         intensity={ls.rimIntensity}
         color="#ffe8c0"
       />
+
+      {/* AMBIENT (very low) */}
       <ambientLight intensity={ls.ambientIntensity} />
     </>
   );
@@ -737,9 +752,9 @@ function InnerViewController({
 
   // Swap in Camera001 from the GLB
   useEffect(() => {
-    const glbCam = cameras.find(
-      (c) => c.name === "Camera001",
-    ) as THREE.PerspectiveCamera | undefined;
+    const glbCam = cameras.find((c) => c.name === "Camera001") as
+      | THREE.PerspectiveCamera
+      | undefined;
     if (!glbCam) return;
 
     glbCamRef.current = glbCam;
@@ -763,14 +778,14 @@ function InnerViewController({
       closedFromOrbitRef.current = false;
       glbCamRef.current = null;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cameras, set]);
 
   // Update aspect on resize
   useEffect(() => {
-    const glbCam = cameras.find(
-      (c) => c.name === "Camera001",
-    ) as THREE.PerspectiveCamera | undefined;
+    const glbCam = cameras.find((c) => c.name === "Camera001") as
+      | THREE.PerspectiveCamera
+      | undefined;
     if (!glbCam) return;
     glbCam.aspect = size.width / size.height;
     glbCam.updateProjectionMatrix();
@@ -898,7 +913,7 @@ function InnerViewController({
 /* ─────────────────────────────────────────────
    Root export
 ───────────────────────────────────────────── */
-useGLTF.preload("/model/bag_new.glb");
+useGLTF.preload("/model/bag_final.glb");
 
 export default function BagScene({
   modelUrl,
@@ -948,20 +963,30 @@ export default function BagScene({
         toneMappingExposure: lightingState.toneMappingExposure,
         outputColorSpace: THREE.SRGBColorSpace,
       }}
+      onCreated={({ gl }) => {
+        (gl as any).physicallyCorrectLights = true;
+      }}
       style={{ background: "transparent" }}
     >
       <RendererConfig exposure={lightingState.toneMappingExposure} />
       <ResponsiveCamera />
-      <Environment preset={lightingState.envPreset as any} backgroundBlurriness={1} />
+      <Environment
+        preset={lightingState.envPreset as any}
+        background={false}
+        blur={0.8}
+      />
       <Lighting ls={lightingState} />
 
       <Suspense fallback={null}>
-        <BagModel url={modelUrl} envMapIntensity={lightingState.envMapIntensity} />
+        <BagModel
+          url={modelUrl}
+          envMapIntensity={lightingState.envMapIntensity}
+        />
       </Suspense>
 
       <WaterPlane />
 
-      {activeCamera === 'inner' ? (
+      {activeCamera === "inner" ? (
         <InnerViewController
           modelUrl={modelUrl}
           isClosing={isClosingInner}
@@ -971,7 +996,7 @@ export default function BagScene({
       ) : (
         <>
           <CameraRig
-            preset={activeCamera as Exclude<CameraPreset, 'inner'>}
+            preset={activeCamera as Exclude<CameraPreset, "inner">}
             flyTarget={flyTarget}
             controlsRef={controlsRef}
           />
