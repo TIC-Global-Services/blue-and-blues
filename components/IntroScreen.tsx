@@ -243,10 +243,21 @@ export default function IntroScreen({
           ))}
         </p>
         {/* "BLUE&BLUES." — hero moment: large, bold, full white */}
-        <p className="text-center uppercase  text-4xl sm:text-6xl text-white font-bold mt-5 ">
-          {'BLUE & BLUES.'.split(' ').map((word, j) => (
-            <span key={j} className="word inline-block">{word}</span>
-          ))}
+       <p className="text-center uppercase text-4xl sm:text-6xl text-white font-bold mt-5">
+          {"BLUE & BLUES.".split(" ").map((word, i) => {
+            if (word === "&") {
+              return (
+                <span key={i} className="word inline-block font-inter mx-2">
+                  &
+                </span>
+              );
+            }
+            return (
+              <span key={i} className="word inline-block mr-2">
+                {word}
+              </span>
+            );
+          })}
         </p>
       </div>
 

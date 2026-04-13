@@ -39,6 +39,7 @@ import { easing } from "maath";
 import type { HotspotDef } from "./types";
 import type { FXState, CameraPreset, LightingState } from "./BagViewer";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import { truncateSync } from "fs";
 
 /* ─────────────────────────────────────────────
    Camera presets
@@ -955,7 +956,6 @@ export default function BagScene({
 
   return (
     <Canvas
-      shadows
       camera={{ position: [0, 0.3, 2.8], fov: 50, near: 0.05, far: 50 }}
       gl={{
         antialias: true,
@@ -966,7 +966,12 @@ export default function BagScene({
       onCreated={({ gl }) => {
         (gl as any).physicallyCorrectLights = true;
       }}
-      style={{ background: "transparent" }}
+      style={{
+    background: "transparent",
+    pointerEvents: typeof window !== "undefined" && window.innerWidth < 768
+      ? "none"
+      : "auto",
+  }}
     >
       <RendererConfig exposure={lightingState.toneMappingExposure} />
       <ResponsiveCamera />

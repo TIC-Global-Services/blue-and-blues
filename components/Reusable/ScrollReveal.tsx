@@ -14,28 +14,35 @@ interface ScrollRevealProps {
   blurStrength?: number;
   containerClassName?: string;
   textClassName?: string;
-  rotationEnd?: string;
-  wordAnimationEnd?: string;
 }
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
   children,
   scrollContainerRef,
   enableBlur = true,
-  baseOpacity = 0.1,
-  baseRotation = 3,
-  blurStrength = 4,
+  baseOpacity = 0.05, // 👈 softer start
+  baseRotation = 2,   // 👈 less aggressive
+  blurStrength = 6,   // 👈 more premium blur
   containerClassName = '',
   textClassName = '',
-  rotationEnd = 'bottom bottom',
-  wordAnimationEnd = 'bottom bottom'
 }) => {
   const containerRef = useRef<HTMLHeadingElement>(null);
 
   const splitText = useMemo(() => {
     const text = typeof children === 'string' ? children : '';
+
     return text.split(/(\s+)/).map((word, index) => {
       if (word.match(/^\s+$/)) return word;
+
+      // 🔥 Handle "&"
+      if (word === '&') {
+        return (
+          <span className="inline-block word font-inter" key={index}>
+            &
+          </span>
+        );
+      }
+
       return (
         <span className="inline-block word" key={index}>
           {word}
@@ -49,50 +56,63 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
     if (!el) return;
 
     const scroller = scrollContainerRef?.current ?? window;
-
     const wordElements = el.querySelectorAll<HTMLElement>('.word');
 
     const triggers: ScrollTrigger[] = [];
 
+    // 🔥 Rotation (slower + longer)
     triggers.push(
       ScrollTrigger.create({
         trigger: el,
         scroller,
-        start: 'top bottom',
-        end: rotationEnd,
-        scrub: true,
-        animation: gsap.fromTo(el,
+        start: 'top 85%',
+        end: 'bottom bottom-=100', // 👈 longer scroll distance
+        scrub: 1.5,    // 👈 smoother lag
+        animation: gsap.fromTo(
+          el,
           { transformOrigin: '0% 50%', rotate: baseRotation },
           { ease: 'none', rotate: 0 }
         ),
       })
     );
 
+    // 🔥 Opacity reveal
     triggers.push(
       ScrollTrigger.create({
         trigger: el,
         scroller,
-        start: 'top bottom-=20%',
-        end: wordAnimationEnd,
-        scrub: true,
-        animation: gsap.fromTo(wordElements,
+        start: 'top 85%',
+        end: 'bottom bottom-=100',
+        scrub: 1,
+        animation: gsap.fromTo(
+          wordElements,
           { opacity: baseOpacity, willChange: 'opacity' },
-          { ease: 'none', opacity: 1, stagger: 0.05 }
+          {
+            ease: 'none',
+            opacity: 1,
+            stagger: 0.1, 
+          }
         ),
       })
     );
 
+    // 🔥 Blur reveal
     if (enableBlur) {
       triggers.push(
         ScrollTrigger.create({
           trigger: el,
           scroller,
-          start: 'top bottom-=20%',
-          end: wordAnimationEnd,
-          scrub: true,
-          animation: gsap.fromTo(wordElements,
+          start: 'top 85%',
+          end: 'bottom bottom-=100',
+          scrub: 1.5,
+          animation: gsap.fromTo(
+            wordElements,
             { filter: `blur(${blurStrength}px)` },
-            { ease: 'none', filter: 'blur(0px)', stagger: 0.05 }
+            {
+              ease: 'none',
+              filter: 'blur(0px)',
+              stagger: 0.08,
+            }
           ),
         })
       );
@@ -101,11 +121,15 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
     return () => {
       triggers.forEach(t => t.kill());
     };
-  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, rotationEnd, wordAnimationEnd, blurStrength]);
+  }, [scrollContainerRef, enableBlur, baseRotation, baseOpacity, blurStrength]);
 
   return (
     <h2 ref={containerRef} className={`my-5 ${containerClassName}`}>
-      <p className={`text-[clamp(1.3rem,3vw,2.5rem)] leading-normal font-medium uppercase text-primary ${textClassName}`}>{splitText}</p>
+      <p
+        className={`text-[clamp(1.3rem,3vw,2.5rem)] leading-normal font-medium uppercase text-primary ${textClassName}`}
+      >
+        {splitText}
+      </p>
     </h2>
   );
 };

@@ -3,7 +3,14 @@ import "./globals.css";
 import { ClashDisplay } from "@/fonts";
 import Navbar from "@/components/Reusable/Navbar";
 import Footer from "@/components/Reusable/Footer";
+import {Inter} from "next/font/google";
 
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+  weight: ['400', '500', '600', '700']
+});
 
 export const metadata: Metadata = {
   title: "Blue & Blues",
@@ -18,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${ClashDisplay.variable} antialiased`}
+        className={`${ClashDisplay.variable} ${inter.variable} antialiased`}
       >
         <Navbar />
         {children}
