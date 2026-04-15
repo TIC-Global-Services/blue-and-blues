@@ -9,145 +9,128 @@ interface IntroScreenProps {
   lightRaysProps: Record<string, any>;
 }
 
+const TOTAL_SCENES = 3;
+
 export default function IntroScreen({
   onDone,
   LightRaysComponent,
   lightRaysProps,
 }: IntroScreenProps) {
+  const targetSceneRef = useRef(0);
   const progressRef = useRef(0);
-  const targetProgressRef = useRef(0);
-
-  const scrollRef = useRef(0);
   const rafRef = useRef<number | null>(null);
-  const autoPlayRef = useRef(false);
+
+  const isAnimatingRef = useRef(false);
+  const touchStartY = useRef(0);
 
   const [, forceRender] = useState(0);
 
-  const SCROLL_LENGTH = 2000; // 🔥 increase = longer experience
-
-  const clamp = (v: number, min = 0, max = 1) =>
+  const clamp = (v: number, min = 0, max = TOTAL_SCENES) =>
     Math.min(max, Math.max(min, v));
 
-  const map = (
-    value: number,
-    inMin: number,
-    inMax: number,
-    outMin: number,
-    outMax: number
-  ) => {
-    const t = clamp((value - inMin) / (inMax - inMin));
-    return outMin + (outMax - outMin) * t;
+  /* ───────── CLEAN ANIMATION ───────── */
+
+  const getSceneProgress = (index: number) => {
+    return Math.max(0, 1 - Math.abs(progressRef.current - index));
   };
 
+  const getStyle = (index: number) => {
+    const t = getSceneProgress(index);
+
+    return {
+      opacity: t,
+      transform: `translateY(${(1 - t) * 24}px)`,
+      transition: 'all 0.45s cubic-bezier(0.22,1,0.36,1)',
+    };
+  };
+
+  /* ───────── LOOP ───────── */
+
   useEffect(() => {
-    /* ───────── RAF SMOOTHING ───────── */
     const animate = () => {
-      // smooth easing (inertia)
-      progressRef.current +=
-        (targetProgressRef.current - progressRef.current) * 0.08;
+      const target = targetSceneRef.current;
+
+      progressRef.current += (target - progressRef.current) * 0.12;
+
+      if (Math.abs(progressRef.current - target) < 0.001) {
+        progressRef.current = target;
+        isAnimatingRef.current = false;
+      }
 
       forceRender((v) => v + 1);
       rafRef.current = requestAnimationFrame(animate);
     };
+
     animate();
 
-    /* ───────── SCROLL CONTROL ───────── */
-    const handleScroll = (e: WheelEvent) => {
-      if (autoPlayRef.current) return;
+    const handleWheel = (e: WheelEvent) => {
+      if (isAnimatingRef.current) return;
 
-      scrollRef.current += e.deltaY;
-      scrollRef.current = clamp(scrollRef.current, 0, SCROLL_LENGTH);
+      targetSceneRef.current =
+        e.deltaY > 0
+          ? clamp(targetSceneRef.current + 1)
+          : clamp(targetSceneRef.current - 1);
 
-      targetProgressRef.current = scrollRef.current / SCROLL_LENGTH;
-
-      // 🔥 auto-finish ending
-      if (targetProgressRef.current > 0.92 && !autoPlayRef.current) {
-        autoPlayRef.current = true;
-
-        const start = progressRef.current;
-        const startTime = performance.now();
-        const duration = 1200;
-
-        const auto = (t: number) => {
-          const elapsed = t - startTime;
-          const p = clamp(elapsed / duration);
-
-          progressRef.current = start + (1 - start) * p;
-
-          if (p < 1) requestAnimationFrame(auto);
-          else onDone();
-        };
-
-        requestAnimationFrame(auto);
-      }
+      isAnimatingRef.current = true;
     };
-
-    /* ───────── TOUCH CONTROL ───────── */
-    let lastTouchY = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
-      lastTouchY = e.touches[0].clientY;
+      touchStartY.current = e.touches[0].clientY;
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (autoPlayRef.current) return;
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isAnimatingRef.current) return;
 
-      const dy = lastTouchY - e.touches[0].clientY;
-      lastTouchY = e.touches[0].clientY;
+      const dy = touchStartY.current - e.changedTouches[0].clientY;
+      if (Math.abs(dy) < 40) return;
 
-      scrollRef.current += dy * 1.5;
-      scrollRef.current = clamp(scrollRef.current, 0, SCROLL_LENGTH);
+      targetSceneRef.current =
+        dy > 0
+          ? clamp(targetSceneRef.current + 1)
+          : clamp(targetSceneRef.current - 1);
 
-      targetProgressRef.current = scrollRef.current / SCROLL_LENGTH;
+      isAnimatingRef.current = true;
     };
 
-    window.addEventListener('wheel', handleScroll, { passive: true });
-    window.addEventListener('touchstart', handleTouchStart, {
-      passive: true,
-    });
-    window.addEventListener('touchmove', handleTouchMove, {
-      passive: true,
-    });
+    window.addEventListener('wheel', handleWheel, { passive: true });
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      window.removeEventListener('wheel', handleScroll);
+      window.removeEventListener('wheel', handleWheel);
       window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [onDone]);
 
   const p = progressRef.current;
 
-  /* ───────── CINEMATIC TIMELINE ───────── */
+  /* ───────── EXIT ───────── */
+  useEffect(() => {
+    if (p >= TOTAL_SCENES && !isAnimatingRef.current) {
+      onDone();
+    }
+  }, [p, onDone]);
 
-  const logoOpacity = 1 - map(p, 0.05, 0.2, 0, 1);
-  const logoScale = 1 - map(p, 0.05, 0.2, 0, 0.2);
+  /* ───────── LIGHT ───────── */
 
-  const scene1Opacity =
-    map(p, 0.15, 0.45, 0, 1) *
-    (1 - map(p, 0.45, 0.65, 0, 1));
+  const lightScale = 1 + p * 6;
+  const lightOpacity = 0.7;
 
-  const scene2Opacity =
-    map(p, 0.55, 0.75, 0, 1) *
-    (1 - map(p, 0.75, 0.9, 0, 1));
-
-  const lightScale = 1 + map(p, 0.6, 1, 0, 26);
-  const lightOpacity = map(p, 0.55, 0.8, 0.6, 1);
+  /* ───────── FLASH ───────── */
 
   const whiteOpacity =
-    map(p, 0.75, 0.9, 0, 1) *
-    (1 - map(p, 0.9, 1, 0, 1));
+    p > 2.7 ? Math.min((p - 2.7) * 4, 1) : 0;
 
   return (
-    <div className="fixed inset-0 z-[9999] overflow-hidden bg-[#060c18]">
-      {/* LIGHT RAYS */}
+    <div className="fixed inset-0 z-[9999] bg-[#060c18] overflow-hidden">
+      {/* LIGHT */}
       <div
         className="absolute inset-0"
         style={{
           transform: `scale(${lightScale})`,
           opacity: lightOpacity,
-          willChange: 'transform, opacity',
         }}
       >
         <LightRaysComponent {...lightRaysProps} />
@@ -156,60 +139,55 @@ export default function IntroScreen({
       {/* LOGO */}
       <div
         className="absolute inset-0 flex items-center justify-center"
-        style={{
-          opacity: logoOpacity,
-          transform: `scale(${logoScale})`,
-          willChange: 'transform, opacity',
-        }}
+        style={getStyle(0)}
       >
-        <Image
-          src="/logo/blues-logo.png"
-          width={220}
-          height={220}
-          alt="logo"
-        />
+        <Image src="/logo/blues-logo.png" width={180} height={180} alt="logo" />
       </div>
 
       {/* SCENE 1 */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
-        style={{ opacity: scene1Opacity }}
+        className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+        style={getStyle(1)}
       >
-        <p className="text-white/40 tracking-[0.4em] text-xs uppercase">
-          A quiet legacy
+        <p className="text-white/30 text-[14px] tracking-[0.4em] uppercase">
+          A QUIET LEGACY
         </p>
-        <h1 className="text-white text-4xl sm:text-6xl font-semibold mt-2">
-          born in Milan,
+
+        <h1 className="text-white text-4xl sm:text-6xl font-medium mt-3 leading-tight">
+          Born in Milan
         </h1>
-        <p className="text-white/40 tracking-[0.4em] text-xs uppercase mt-2">
-          beautifully grounded in
+
+        <p className="text-white/40 text-lg mt-4 uppercase font-semibold tracking-[0.3em]">
+          Crafted in India
         </p>
-        <h2 className="text-[#7EC9DA] text-xl sm:text-2xl mt-2">
-          Indian Craftsmanship
-        </h2>
       </div>
 
       {/* SCENE 2 */}
       <div
-        className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center"
-        style={{ opacity: scene2Opacity }}
+        className="absolute inset-0 flex flex-col items-center justify-center text-center px-6"
+        style={getStyle(2)}
       >
-        <p className="text-white/40 tracking-[0.4em] text-xs uppercase">
-          Crafting pieces that evolve alongside you,
+        <p className="text-white/40 text-sm font-medium uppercase tracking-[0.3em]">
+          Designed to evolve with you
         </p>
-        <p className="text-white/60 text-lg mt-3">
-          Not just carried, but lived.
-        </p>
-        <h1 className="text-white text-4xl sm:text-6xl font-bold mt-6">
-          BLUE <span className="font-inter">&</span> BLUES.
+
+        <h1 className="text-white text-4xl sm:text-6xl font-semibold mt-6 leading-tight">
+          BLUE <span className="font-inter">&</span> BLUES
         </h1>
       </div>
 
-      {/* WHITE FLASH */}
+      {/* FLASH */}
       <div
         className="absolute inset-0 bg-white"
         style={{ opacity: whiteOpacity }}
       />
+
+      {/* HINT */}
+      {Math.round(p) === 0 && (
+        <div className="absolute bottom-10 w-full text-center text-white/40 text-xs tracking-widest animate-pulse">
+          SWIPE / SCROLL
+        </div>
+      )}
     </div>
   );
 }
