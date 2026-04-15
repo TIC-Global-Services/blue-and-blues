@@ -11,9 +11,9 @@ interface EssentialCardProps {
 
 const EssentialCard = ({ title, imgUrl, url, price }: EssentialCardProps) => {
   return (
-    <div className="border border-gray-200 rounded-xl p-2 group hover:border-primary/30 transition-colors duration-300">
+    <div className=" hover:border border-gray-200  p-2 group hover:border-primary/30 transition-colors duration-300">
       <Link href={url} target="_blank" className="block space-y-3">
-        <div className="rounded-lg overflow-hidden aspect-3/4 bg-gray-50">
+        <div className=" overflow-hidden aspect-4/4 bg-gray-50">
           <Image
             src={imgUrl}
             alt={title}
