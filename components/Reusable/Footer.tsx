@@ -129,7 +129,7 @@ const Footer = () => {
             <FooterHeading>Menu</FooterHeading>
             <div className="flex flex-col gap-y-3">
               <div className="flex flex-wrap gap-x-6 gap-y-3">
-                <FooterLink href="#">Our Story</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/our-story">Our Story</FooterLink>
                 <FooterLink href="#">Italian Heritage</FooterLink>
                 <FooterLink href="#">Core Values</FooterLink>
               </div>

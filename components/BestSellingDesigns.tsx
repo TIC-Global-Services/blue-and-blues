@@ -8,31 +8,31 @@ const bestProducts = [
   {
     title: "The Arch Backpack",
     price: "11999",
-    url: "#",
+    url: "https://shop.blueandblues.com/products/the-arc-backpack",
     imgUrl: "/products/gray-backpack.jpg",
   },
   {
     title: "The Traveller Backpack",
     price: "16800",
-    url: "#",
+    url: "https://shop.blueandblues.com/products/the-traveller-backpack",
     imgUrl: "/products/traveller-backpack.jpg",
   },
   {
     title: "The Core Tech Organizer",
     price: "6500",
-    url: "#",
+    url: "https://shop.blueandblues.com/products/the-core-tech-organizer",
     imgUrl: "/products/bolt-tech-organiser.jpg",
   },
   {
     title: "Core 5 Wallet",
     price: "4200",
-    url: "#",
+    url: "https://shop.blueandblues.com/products/the-core5-magsafe-wallet",
     imgUrl: "/products/core5-wallet2.jpg",
   },
   {
     title: "The Pulse Laptop Bag",
     price: "10999",
-    url: "#",
+    url: "https://shop.blueandblues.com/products/the-pulse-laptop-bag",
     imgUrl: "/products/axis-folio-bag.webp",
   },
 ];
