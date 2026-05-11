@@ -191,7 +191,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
       </Suspense>
 
       {/* Hotspot dots overlaid on canvas — fade out instead of hard unmount */}
-      {(activeCamera === 'front' || pendingInner) && (
+      {(activeCamera === 'front' || activeCamera === 'back' || pendingInner) && (
         <div
           className="transition-opacity duration-400"
           style={{ opacity: pendingInner ? 0 : 1, pointerEvents: pendingInner ? 'none' : 'auto' }}
@@ -200,6 +200,7 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
             hotspots={HOTSPOTS}
             positions={hotspotPositions}
             activeId={activeHotspot?.hotspot.id ?? null}
+            activeCamera={activeCamera}
             onHotspotClick={handleHotspotClick}
           />
         </div>

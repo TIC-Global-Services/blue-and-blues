@@ -7,9 +7,9 @@ import type { HotspotDef } from './types';
 export const HOTSPOTS: HotspotDef[] = [
   {
     id: 'handle',
-    label: 'Premium Handle',
+    label: 'PREMIUM CARRY SYSTEM',
     description:
-      'Hand-stitched leather handle with reinforced double-wrap construction. Treated with natural oils for lasting durability and a buttery-soft grip.',
+      'Soft-grip leather handles, hand stitched with reinforced construction for comfort during extended use. Paired with a detachable leather shoulder strap for versatile carry options.',
     position: [0, 0.6, 0.05],
     cameraTarget: [0, 0.65, 0],
     cameraPosition: [0.5, 1.4, 1.2],
@@ -17,29 +17,30 @@ export const HOTSPOTS: HotspotDef[] = [
   },
   {
     id: 'zipper',
-    label: 'YKK Zipper',
+    label: 'YKK® ZIPPER SYSTEM',
     description:
-      'Precision YKK® No.10 zipper with custom metal pull. Engineered for 100,000+ open/close cycles with smooth glide and anti-snag teeth.',
+      'Precision YKK® double-sided zipper engineered for smooth, consistent glide. Allows easy access from either direction with anti-snag performance.',
     position: [0.65, -0.2, 0.32],
     cameraTarget: [0, 0.5, 0],
     cameraPosition: [1.4, -0.4, 0.1],
     color: '#fff',
   },
-   {
-    id: 'logo',
-    label: 'Brand',
+  {
+    id: 'travel-friendly',
+    label: 'TRAVEL FRIENDLY',
     description:
-      'Solid brass logo plate, hand-polished and lacquered to resist tarnish. Engraved with serial number on the reverse.',
-    position: [0.08, 0.05, 0.42],
-    cameraTarget: [0.08, 0.05, -0.42],
-    cameraPosition: [0.08, 0.05, 0.6],
+      'Integrated rear luggage band designed to securely slide over suitcase handles, enabling effortless movement during travel.',
+    position: [0.08, 0.05, -0.42],
+    cameraTarget: [0, 0.05, 0],
+    cameraPosition: [0, 0.05, -1.4],
     color: '#fff',
+    view: 'back',
   },
   {
     id: 'base',
-    label: 'Protective Base',
+    label: 'STRUCTURED CONSTRUCTION',
     description:
-      'Reinforced rubber feet on a steel-strutted base panel. Keeps the bag upright and protects the leather from abrasion on any surface.',
+      'Constructed in top-grain leather with internal reinforcement, designed to retain its structure and stand the test of time. Engineered with panel-specific support materials, reinforced in key areas to maintain form, ensuring long-lasting structure and a refined aesthetic that not only endures, but evolves beautifully with age.',
     position: [0, -0.62, 0.1],
     cameraTarget: [0, -0.52, 0],
     cameraPosition: [0.3, -0.3, 1.4],

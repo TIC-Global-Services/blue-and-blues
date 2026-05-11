@@ -8,6 +8,7 @@ interface HotspotOverlayProps {
   hotspots: HotspotDef[];
   positions: Record<string, { x: number; y: number; visible: boolean }>;
   activeId: string | null;
+  activeCamera: string;
   onHotspotClick: (hotspot: HotspotDef) => void;
 }
 
@@ -15,11 +16,16 @@ export default function HotspotOverlay({
   hotspots,
   positions,
   activeId,
+  activeCamera,
   onHotspotClick,
 }: HotspotOverlayProps) {
+  const visibleHotspots = hotspots.filter(
+    (hs) => (hs.view ?? 'front') === activeCamera
+  );
+
   return (
     <div className={styles.hotspotLayer} aria-label="Model hotspots">
-      {hotspots.map((hs) => {
+      {visibleHotspots.map((hs) => {
         const pos = positions[hs.id];
         if (!pos?.visible) return null;
 

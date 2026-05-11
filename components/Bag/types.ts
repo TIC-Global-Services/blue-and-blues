@@ -11,6 +11,8 @@ export interface HotspotDef {
   /** Camera position when flying to this hotspot */
   cameraPosition: [number, number, number];
   color?: string;
+  /** If set, hotspot only shows on this camera view */
+  view?: 'front' | 'back' | 'side' | 'inner';
 }
 
 export interface ActiveHotspot {
