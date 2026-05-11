@@ -55,27 +55,15 @@ const Navbar = () => {
 
           {/* RIGHT */}
           <div className="hidden md:flex items-center gap-6">
-            {rightLinks.map((link, i) => {
-              if (link.name === "Search" && link.icon) {
-                const Icon = link.icon;
-
-                return (
-                  <a key={i} href={link.href}>
-                    <Icon className="text-xl hover:text-white/70 transition" />
-                  </a>
-                );
-              }
-
-              return (
-                <a
-                  key={i}
-                  href={link.href}
-                  className="text-sm hover:text-white/70 transition"
-                >
-                  {link.name}
-                </a>
-              );
-            })}
+            {rightLinks.map((link, i) => (
+              <a
+                key={i}
+                href={link.href}
+                className="text-sm hover:text-white/70 transition"
+              >
+                {link.name}
+              </a>
+            ))}
           </div>
 
           {/* MOBILE RIGHT ICONS */}
