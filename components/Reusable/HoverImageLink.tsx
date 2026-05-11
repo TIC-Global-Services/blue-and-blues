@@ -11,12 +11,14 @@ const HoverImageLink = ({
   href,
   label = "View Product",
   staticBtn = false,
+  className = ""
 }: {
   src: string;
   alt: string;
   href: string;
   label?: string;
   staticBtn?: boolean;
+  className?: string;
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLDivElement>(null);
@@ -75,7 +77,7 @@ const HoverImageLink = ({
           src={src}
           fill
           alt={alt}
-          className="object-cover transition duration-500 group-hover:scale-105"
+          className={`object-cover transition duration-500 group-hover:scale-105 ${className}`}
         />
 
         {/* Overlay */}
@@ -88,7 +90,7 @@ const HoverImageLink = ({
         />
 
         {/* Button */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className={`absolute inset-0 flex pointer-events-none ${staticBtn ? "items-end justify-start p-3" : "items-center justify-center"}`}>
           <div
             ref={btnRef}
             className={

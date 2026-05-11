@@ -97,6 +97,7 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/left_top.jpg"
               alt="left top"
+              label="View Laptop Bags"
               href="https://shop.blueandblues.com/collections/laptop-bags"
             />
           </div>
@@ -105,7 +106,8 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/left_bottom.jpg"
               alt="left bottom"
-              href="https://shop.blueandblues.com/collections/apple-accessories"
+              label="View Wallets"
+              href="https://shop.blueandblues.com/collections/magsafe-wallets"
             />
           </div>
 
@@ -126,6 +128,7 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/main_frame.png"
               alt="main"
+              label="View Backpacks"
               href="https://shop.blueandblues.com/collections/backpacks"
             />
           </div>
@@ -147,6 +150,7 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/right_top.jpg"
               alt="right top"
+              label="View Organizers"
               href="https://shop.blueandblues.com/collections/organizers"
             />
           </div>
@@ -155,7 +159,8 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/right_bottom.jpg"
               alt="right bottom"
-              href="https://shop.blueandblues.com/collections/focus"
+              label="View Laptop Bags"
+              href="https://shop.blueandblues.com/collections/laptop-bags"
             />
           </div>
         </div>

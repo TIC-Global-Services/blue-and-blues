@@ -145,13 +145,13 @@ const Footer = () => {
             <FooterHeading>Support</FooterHeading>
             <div className="flex flex-col gap-y-3">
               <div className="flex flex-wrap md:justify-end gap-x-6 gap-y-3">
-                <FooterLink href="#">Contact Us</FooterLink>
-                <FooterLink href="#">Shipping Policy</FooterLink>
-                <FooterLink href="#">Returns &amp; Exchange</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/contact-us">Contact Us</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/shipping-policy">Shipping Policy</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/returns-and-exchanges">Returns &amp; Exchange</FooterLink>
               </div>
               <div className="flex flex-wrap md:justify-end gap-x-6 gap-y-3">
-                <FooterLink href="#">Terms &amp; Conditions</FooterLink>
-                <FooterLink href="#">Privacy Policy</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/policies/terms-of-service">Terms &amp; Conditions</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/privacy-policy">Privacy Policy</FooterLink>
               </div>
             </div>
           </motion.div>
