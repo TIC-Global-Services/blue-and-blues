@@ -31,6 +31,7 @@ const Navbar = () => {
               <a
                 key={i}
                 href={link.href}
+                target="_blank"
                 className="text-sm hover:text-white/70 transition"
               >
                 {link.name}
@@ -59,6 +60,7 @@ const Navbar = () => {
               <a
                 key={i}
                 href={link.href}
+                target="_blank"
                 className="text-sm hover:text-white/70 transition"
               >
                 {link.name}
