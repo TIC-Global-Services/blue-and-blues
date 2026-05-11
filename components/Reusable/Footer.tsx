@@ -130,12 +130,12 @@ const Footer = () => {
             <div className="flex flex-col gap-y-3">
               <div className="flex flex-wrap gap-x-6 gap-y-3">
                 <FooterLink href="https://shop.blueandblues.com/pages/our-story">Our Story</FooterLink>
-                <FooterLink href="#">Italian Heritage</FooterLink>
-                <FooterLink href="#">Core Values</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/italian-legacy">Italian Heritage</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/core-values">Core Values</FooterLink>
               </div>
               <div className="flex flex-wrap gap-x-6 gap-y-3">
-                <FooterLink href="#">Our Materials</FooterLink>
-                <FooterLink href="#">Care Guide</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/our-materials">Our Materials</FooterLink>
+                <FooterLink href="https://shop.blueandblues.com/pages/care-guide-for-bags">Care Guide</FooterLink>
               </div>
             </div>
           </motion.div>

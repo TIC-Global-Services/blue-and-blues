@@ -159,8 +159,8 @@ const DesktopBornBetween = () => {
             <HoverImageLink
               src="/Home/right_bottom.jpg"
               alt="right bottom"
-              label="View Laptop Bags"
-              href="https://shop.blueandblues.com/collections/laptop-bags"
+              label="View Wander"
+              href="https://shop.blueandblues.com/collections/wander"
             />
           </div>
         </div>

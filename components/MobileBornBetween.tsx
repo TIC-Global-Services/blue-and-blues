@@ -96,7 +96,7 @@ const MobileBornBetween = () => {
             <HoverImageLink src="/Home/left_bottom.jpg" alt="" href="https://shop.blueandblues.com/collections/magsafe-wallets" staticBtn label="View Wallets" />
           </div>
           <div className="relative aspect-[3/4] rounded-2xl overflow-hidden ">
-            <HoverImageLink src="/Home/right_bottom.jpg" alt="" href="https://shop.blueandblues.com/collections/laptop-bags" label="View Laptop Bags" staticBtn className=" object-[20%_40%]"  />
+            <HoverImageLink src="/Home/right_bottom.jpg" alt="" href="https://shop.blueandblues.com/collections/wander" label="View Wander" staticBtn className=" object-[20%_40%]"  />
           </div>
         </div>
 
