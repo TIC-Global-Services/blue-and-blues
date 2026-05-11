@@ -9,13 +9,12 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   const NavLinks = [
-    { name: "Shop", href: "/" },
-    { name: "Collections", href: "/" },
-    { name: "About", href: "/" },
-    { name: "Care", href: "/" },
-    { name: "Search", icon: Search, href: "/" },
-    { name: "Account", href: "/" },
-    { name: "Cart", href: "/" },
+    { name: "Shop", href: "https://shop.blueandblues.com/" },
+    { name: "Collections", href: "https://shop.blueandblues.com/collections" },
+    { name: "About", href: "https://shop.blueandblues.com/pages/our-story" },
+    { name: "Care", href: "https://shop.blueandblues.com/pages/care-guide-for-bags" },
+    { name: "Account", href: "https://account.blueandblues.com/profile" },
+    { name: "Cart", href: "https://shop.blueandblues.com" },
   ];
 
   const leftLinks = NavLinks.slice(0, 4);
