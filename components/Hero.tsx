@@ -243,7 +243,8 @@ const Hero = () => {
             {/* CTA */}
             <motion.div variants={copyChildVariants}>
               <Link
-                href="#"
+                href="https://shop.blueandblues.com/pages/care-guide-for-bags?view=list-collections"
+                target="_blank"
                 onClick={() => playTap()}
                 className="inline-block cursor-pointer px-7 py-2.5 border border-white/60 text-[10px] tracking-[3px] uppercase text-white/80 hover:bg-white hover:text-black transition-colors duration-300"
               >
