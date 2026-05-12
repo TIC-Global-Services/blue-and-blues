@@ -31,6 +31,7 @@ import {
   Matrix4,
   WebGLRenderTarget,
   HalfFloatType,
+  UnsignedByteType,
   Color,
   FrontSide,
   PlaneGeometry,
@@ -39,7 +40,6 @@ import { easing } from "maath";
 import type { HotspotDef } from "./types";
 import type { FXState, CameraPreset, LightingState } from "./BagViewer";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { truncateSync } from "fs";
 
 /* ─────────────────────────────────────────────
    Camera presets
@@ -319,11 +319,15 @@ function WaterPlane() {
   const matRef = useRef<ShaderMaterial | null>(null);
   const { scene, gl } = useThree();
   const normalMap = useTexture("/waternormal4.jpg");
+  const frameCount = useRef(0);
 
   // Mirror camera internals
   const mirrorCamera = useRef(new PerspectiveCamera());
+  // Mobile: lower RT resolution + UnsignedByte (iOS HalfFloat partial support)
+  const isMobileDevice = typeof navigator !== "undefined" && /iPad|iPhone|iPod|Android/i.test(navigator.userAgent);
+  const rtSize = isMobileDevice ? 256 : 512;
   const renderTarget = useRef(
-    new WebGLRenderTarget(512, 512, { type: HalfFloatType }),
+    new WebGLRenderTarget(rtSize, rtSize, { type: isMobileDevice ? UnsignedByteType : HalfFloatType }),
   );
   const textureMatrix = useRef(new Matrix4());
   const mirrorPlane = useRef(new Plane());
@@ -466,7 +470,9 @@ function WaterPlane() {
     pm.elements[10] = cp.z + 1.0 - 0.001; // clipBias
     pm.elements[14] = cp.w;
 
-    // ── Render mirror pass ──
+    // ── Render mirror pass — throttle to every other frame on mobile ──
+    frameCount.current += 1;
+    if (isMobileDevice && frameCount.current % 2 !== 0) return;
     const currentRT = gl.getRenderTarget();
     mesh.visible = false;
     gl.setRenderTarget(renderTarget.current);
@@ -969,7 +975,7 @@ export default function BagScene({
       style={{
     background: "transparent",
     pointerEvents: typeof window !== "undefined" && window.innerWidth < 768
-      ? "none"
+      ? activeCamera === "inner" ? "auto" : "none"
       : "auto",
   }}
     >

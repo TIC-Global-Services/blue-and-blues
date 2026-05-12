@@ -1,7 +1,16 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef, Component, type ReactNode } from 'react';
+
+class SceneErrorBoundary extends Component<{ children: ReactNode }, { crashed: boolean }> {
+  state = { crashed: false };
+  static getDerivedStateFromError() { return { crashed: true }; }
+  render() {
+    if (this.state.crashed) return null;
+    return this.props.children;
+  }
+}
 import type { HotspotDef, ActiveHotspot } from './types';
 import { HOTSPOTS } from './Hotspots';
 import HotspotOverlay from './HotspotOverlay';
@@ -175,20 +184,22 @@ function BagViewerInner({ modelPath }: { modelPath: string }) {
 
 
       {/* 3D Canvas — Suspense fallback is null because SceneLoader handles it */}
-      <Suspense fallback={null}>
-        <BagScene
-          modelUrl={modelPath}
-          activeCamera={activeCamera}
-          flyingTo={flyingTo}
-          hotspots={HOTSPOTS}
-          fx={fx}
-          lightingState={lighting}
-          isClosingInner={isClosingInner}
-          onInnerCloseDone={handleInnerCloseDone}
-          onOrbitReady={handleOrbitReady}
-          onHotspotPositionsUpdate={setHotspotPositions}
-        />
-      </Suspense>
+      <SceneErrorBoundary>
+        <Suspense fallback={null}>
+          <BagScene
+            modelUrl={modelPath}
+            activeCamera={activeCamera}
+            flyingTo={flyingTo}
+            hotspots={HOTSPOTS}
+            fx={fx}
+            lightingState={lighting}
+            isClosingInner={isClosingInner}
+            onInnerCloseDone={handleInnerCloseDone}
+            onOrbitReady={handleOrbitReady}
+            onHotspotPositionsUpdate={setHotspotPositions}
+          />
+        </Suspense>
+      </SceneErrorBoundary>
 
       {/* Hotspot dots overlaid on canvas — fade out instead of hard unmount */}
       {(activeCamera === 'front' || activeCamera === 'back' || pendingInner) && (

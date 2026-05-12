@@ -5,7 +5,6 @@ import { motion, Variants } from "framer-motion";
 import BagViewer from "@/components/Bag";
 import LightRays from "@/components/Reusable/LightRays";
 import Particles from "@/components/Reusable/Particles";
-import IntroScreen from "@/components/IntroScreen";
 import PageLoader from "@/components/PageLoader";
 import MusicButton from "@/components/Reusable/MusicButton";
 import Link from "next/link";
@@ -14,8 +13,6 @@ import { useGLTF } from "@react-three/drei";
 
 // Kick off model download immediately — before the Canvas even mounts
 useGLTF.preload("/model/bag_final.glb");
-
-const INTRO_KEY = "bb_intro_seen";
 
 const LIGHT_RAYS_PROPS = {
   raysOrigin: "top-center" as const,
@@ -38,15 +35,15 @@ const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 const heroVariants: Variants = {
   hidden: {
     opacity: 0,
-    scale: 1.08,
-    filter: "brightness(1.6) blur(12px)",
+    scale: 1.04,
+    filter: "brightness(0.3) blur(8px)",
   },
   visible: {
     opacity: 1,
     scale: 1,
     filter: "brightness(1) blur(0px)",
     transition: {
-      duration: 0.6,
+      duration: 1.0,
       ease: [0.22, 1, 0.36, 1],
     },
   },
@@ -100,7 +97,6 @@ const badgeVariants = {
 
 const Hero = () => {
   const [modelLoaded, setModelLoaded] = useState(false);
-  const [showIntro, setShowIntro] = useState<boolean | null>(null);
   // Controls when hero in-animation fires
   const [heroVisible, setHeroVisible] = useState(false);
   const [lockScroll, setLockScroll] = useState(true);
@@ -109,31 +105,12 @@ const Hero = () => {
   const { playing, toggle, play, pause, playTap } = useAudio();
 
   const handleModelLoaded = () => {
-    setModelLoaded(true);
-    const seen = sessionStorage.getItem(INTRO_KEY);
-    setShowIntro(!seen);
     play();
-    if (seen) {
-      setHeroVisible(true);
-      // Unlock scroll 1 s after hero reveal (no intro path)
-      setTimeout(() => setLockScroll(false), 1000);
-    }
-  };
-
-  const handleIntroDone = () => {
-    sessionStorage.setItem(INTRO_KEY, "1");
-
-    window.scrollTo({ top: 0, behavior: "instant" });
-
-    // Make hero visible BEFORE removing intro overlay so there's no white flash
-    setHeroVisible(true);
-    setShowIntro(false);
-    play();
-
-    // Unlock scroll 1 s after hero reveal
     setTimeout(() => {
-      setLockScroll(false);
-    }, 1000);
+      setModelLoaded(true);
+      setHeroVisible(true);
+      setTimeout(() => setLockScroll(false), 1000);
+    }, 3000);
   };
 
   // Pause music automatically when hero scrolls out of view
@@ -171,21 +148,12 @@ const Hero = () => {
       document.body.style.width = "";
       document.body.style.top = "";
     };
-  // showIntro dep ensures we re-apply the lock after IntroScreen unmounts and clears overflow
-  }, [lockScroll, showIntro]);
+  }, [lockScroll]);
 
   return (
     <>
       {/* Full-page loader — visible until GLB is fully downloaded */}
       {!modelLoaded && <PageLoader onLoaded={handleModelLoaded} />}
-
-      {showIntro && (
-        <IntroScreen
-          onDone={handleIntroDone}
-          LightRaysComponent={LightRays}
-          lightRaysProps={LIGHT_RAYS_PROPS}
-        />
-      )}
 
       {/* ── Hero ── */}
       <motion.div
@@ -194,8 +162,6 @@ const Hero = () => {
         variants={heroVariants}
         initial="hidden"
         animate={heroVisible ? "visible" : "hidden"}
-        // Keep invisible (not display:none) while intro plays so 3D scene loads
-        style={{ visibility: showIntro ? "hidden" : "visible" }}
       >
         {/* Light rays */}
         <LightRays className="absolute inset-0 z-[1]" {...LIGHT_RAYS_PROPS} />

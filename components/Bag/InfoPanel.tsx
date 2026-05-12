@@ -26,7 +26,7 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
     backdrop-blur-lg bg-white/10
     transition-transform duration-300
 
-    bottom-0 left-0 right-0 h-[30%] w-full border-t border-x border-white/20
+    bottom-0 left-0 right-0 h-[35%] w-full border-t border-x border-white/20
     md:top-0 md:bottom-auto md:left-auto md:right-0 md:h-full md:w-[350px] md:border-l md:border-y md:border-x-0
 
     ${activeHotspot?.open
@@ -60,7 +60,7 @@ export default function InfoPanel({ activeHotspot, onClose }: InfoPanelProps) {
       </div>
 
       {/* Title */}
-      <h2 className="text-2xl font-medium uppercase mb-3">
+      <h2 className=" text-lg md:text-2xl font-medium uppercase mb-3">
         {hs.label}
       </h2>
 

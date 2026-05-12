@@ -9,8 +9,8 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
 
   const NavLinks = [
-    { name: "Shop", href: "https://shop.blueandblues.com/" },
-    { name: "Collections", href: "https://shop.blueandblues.com/collections" },
+    { name: "Shop", href: "https://shop.blueandblues.com/pages/care-guide-for-bags?view=list-collections" },
+    { name: "Collections", href: "https://shop.blueandblues.com/pages/care-guide-for-bags?view=list-collections" },
     { name: "About", href: "https://shop.blueandblues.com/pages/our-story" },
     { name: "Care", href: "https://shop.blueandblues.com/pages/care-guide-for-bags" },
     { name: "Account", href: "https://account.blueandblues.com/profile" },
